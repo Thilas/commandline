@@ -21,7 +21,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(with => with.HelpWriter = writer);
 
             // Exercize system
-            sut.ParseArguments<FakeOptionsWithRequired>(new string[] { });
+            sut.ParseArguments<Options_With_Required_Set_To_True>(new string[] { });
 
             // Verify outcome
             var text = writer.ToString();
@@ -37,7 +37,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(with => with.HelpWriter = writer);
 
             // Exercize system
-            sut.ParseArguments(new string[] { }, typeof(AddOptions), typeof(CommitOptions), typeof(CloneOptions));
+            sut.ParseArguments(new string[] { }, typeof(Add_Verb), typeof(Commit_Verb), typeof(Clone_Verb));
 
             // Verify outcome
             var text = writer.ToString();
@@ -53,7 +53,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(with => with.HelpWriter = writer);
 
             // Exercize system
-            sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(new string[] { });
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(new string[] { });
 
             // Verify outcome
             var text = writer.ToString();
@@ -65,14 +65,14 @@ namespace CommandLine.Tests.Unit
         public void Parse_options()
         {
             // Fixture setup
-            var expectedOptions = new FakeOptions { StringValue = "strvalue", IntSequence = new[] { 1, 2, 3 } };
+            var expectedOptions = new Simple_Options { StringValue = "strvalue", IntSequence = new[] { 1, 2, 3 } };
             var sut = new Parser();
 
             // Exercize system
-            var result = sut.ParseArguments<FakeOptions>(new[] { "--stringvalue=strvalue", "-i1", "2", "3" });
+            var result = sut.ParseArguments<Simple_Options>(new[] { "--stringvalue=strvalue", "-i1", "2", "3" });
 
             // Verify outcome
-            ((Parsed<FakeOptions>)result).Value.ShouldBeEquivalentTo(expectedOptions);
+            ((Parsed<Simple_Options>)result).Value.ShouldBeEquivalentTo(expectedOptions);
             // Teardown
         }
 
@@ -84,14 +84,14 @@ namespace CommandLine.Tests.Unit
         public void Parse_options_with_short_name(string outputFile, string[] args)
         {
             // Fixture setup
-            var expectedOptions = new FakeOptionsWithSwitches { OutputFile = outputFile };
+            var expectedOptions = new Options_With_Switches { OutputFile = outputFile };
             var sut = new Parser();
 
             // Exercize system
-            var result = sut.ParseArguments<FakeOptionsWithSwitches>(args);
+            var result = sut.ParseArguments<Options_With_Switches>(args);
 
             // Verify outcome
-            ((Parsed<FakeOptionsWithSwitches>)result).Value.ShouldBeEquivalentTo(expectedOptions);
+            ((Parsed<Options_With_Switches>)result).Value.ShouldBeEquivalentTo(expectedOptions);
             // Teardown
         }
 
@@ -102,10 +102,10 @@ namespace CommandLine.Tests.Unit
             var sut = Parser.Default;
 
             // Exercize system
-            var result = sut.ParseArguments<FakeOptionsWithSwitches>(new[] { "-i", "-i", "-o", "file" });
+            var result = sut.ParseArguments<Options_With_Switches>(new[] { "-i", "-i", "-o", "file" });
 
             // Verify outcome
-            Assert.IsType<NotParsed<FakeOptionsWithSwitches>>(result);
+            Assert.IsType<NotParsed<Options_With_Switches>>(result);
             // Teardown
         }
 
@@ -113,7 +113,7 @@ namespace CommandLine.Tests.Unit
         public void Parse_options_with_double_dash()
         {
             // Fixture setup
-            var expectedOptions = new FakeOptionsWithValues
+            var expectedOptions = new Simple_Options_With_Values
                                   {
                                       StringValue = "astring",
                                       LongValue = 20L,
@@ -124,11 +124,11 @@ namespace CommandLine.Tests.Unit
 
             // Exercize system
             var result =
-                sut.ParseArguments<FakeOptionsWithValues>(
+                sut.ParseArguments<Simple_Options_With_Values>(
                     new[] { "--stringvalue", "astring", "--", "20", "--aaa", "-b", "--ccc", "30" });
 
             // Verify outcome
-            ((Parsed<FakeOptionsWithValues>)result).Value.ShouldBeEquivalentTo(expectedOptions);
+            ((Parsed<Simple_Options_With_Values>)result).Value.ShouldBeEquivalentTo(expectedOptions);
             // Teardown
         }
 
@@ -136,18 +136,18 @@ namespace CommandLine.Tests.Unit
         public void Parse_options_with_double_dash_in_verbs_scenario()
         {
             // Fixture setup
-            var expectedOptions = new AddOptions { Patch = true, FileName = "--strange-fn" };
+            var expectedOptions = new Add_Verb { Patch = true, FileName = "--strange-fn" };
             var sut = new Parser(with => with.EnableDashDash = true);
 
             // Exercize system
             var result = sut.ParseArguments(
                 new[] { "add", "-p", "--", "--strange-fn" },
-                typeof(AddOptions),
-                typeof(CommitOptions),
-                typeof(CloneOptions));
+                typeof(Add_Verb),
+                typeof(Commit_Verb),
+                typeof(Clone_Verb));
 
             // Verify outcome
-            Assert.IsType<AddOptions>(((Parsed<object>)result).Value);
+            Assert.IsType<Add_Verb>(((Parsed<object>)result).Value);
             ((Parsed<object>)result).Value.ShouldBeEquivalentTo(expectedOptions, o => o.RespectingRuntimeTypes());
             // Teardown
         }
@@ -156,7 +156,7 @@ namespace CommandLine.Tests.Unit
         public void Parse_verbs()
         {
             // Fixture setup
-            var expectedOptions = new CloneOptions
+            var expectedOptions = new Clone_Verb
                                   {
                                       Quiet = true,
                                       Urls =
@@ -172,12 +172,12 @@ namespace CommandLine.Tests.Unit
             var result =
                 sut.ParseArguments(
                     new[] { "clone", "-q", "http://gsscoder.github.com/", "http://yes-to-nooo.github.com/" },
-                    typeof(AddOptions),
-                    typeof(CommitOptions),
-                    typeof(CloneOptions));
+                    typeof(Add_Verb),
+                    typeof(Commit_Verb),
+                    typeof(Clone_Verb));
 
             // Verify outcome
-            Assert.IsType<CloneOptions>(((Parsed<object>)result).Value);
+            Assert.IsType<Clone_Verb>(((Parsed<object>)result).Value);
             ((Parsed<object>)result).Value.ShouldBeEquivalentTo(expectedOptions, o => o.RespectingRuntimeTypes());
             // Teardown
         }
@@ -190,16 +190,16 @@ namespace CommandLine.Tests.Unit
         public void Parse_options_with_short_name_in_verbs_scenario(string message, string[] args)
         {
             // Fixture setup
-            var expectedOptions = new CommitOptions() { Message = message };
+            var expectedOptions = new Commit_Verb() { Message = message };
             var sut = new Parser();
 
             // Exercize system
             var result = sut.ParseArguments(
                 args,
-                typeof(AddOptions), typeof(CommitOptions), typeof(CloneOptions));
+                typeof(Add_Verb), typeof(Commit_Verb), typeof(Clone_Verb));
 
             // Verify outcome
-            Assert.IsType<CommitOptions>(((Parsed<object>)result).Value);
+            Assert.IsType<Commit_Verb>(((Parsed<object>)result).Value);
             ((Parsed<object>)result).Value.ShouldBeEquivalentTo(expectedOptions, o => o.RespectingRuntimeTypes());
             // Teardown
         }
@@ -213,7 +213,7 @@ namespace CommandLine.Tests.Unit
             // Exercize system
             var result = sut.ParseArguments(
                 new[] { "clone", "-q", "-q", "http://gsscoder.github.com/", "http://yes-to-nooo.github.com/" },
-                typeof(AddOptions), typeof(CommitOptions), typeof(CloneOptions));
+                typeof(Add_Verb), typeof(Commit_Verb), typeof(Clone_Verb));
 
             // Verify outcome
             Assert.IsType<NotParsed<object>>(result);
@@ -224,7 +224,7 @@ namespace CommandLine.Tests.Unit
         public void Parse_verbs_using_generic_overload()
         {
             // Fixture setup
-            var expectedOptions = new CloneOptions
+            var expectedOptions = new Clone_Verb
                                   {
                                       Quiet = true,
                                       Urls =
@@ -238,11 +238,11 @@ namespace CommandLine.Tests.Unit
 
             // Exercize system
             var result =
-                sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(
+                sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(
                     new[] { "clone", "-q", "http://gsscoder.github.com/", "http://yes-to-nooo.github.com/" });
 
             // Verify outcome
-            Assert.IsType<CloneOptions>(((Parsed<object>)result).Value);
+            Assert.IsType<Clone_Verb>(((Parsed<object>)result).Value);
             ((Parsed<object>)result).Value.ShouldBeEquivalentTo(expectedOptions, o => o.RespectingRuntimeTypes());
             // Teardown
         }
@@ -251,14 +251,14 @@ namespace CommandLine.Tests.Unit
         public void Parse_to_immutable_instance()
         {
             // Fixture setup
-            var expectedOptions = new FakeImmutableOptions("strvalue", new[] { 1, 2, 3 }, default(bool), default(long));
+            var expectedOptions = new Immutable_Simple_Options("strvalue", new[] { 1, 2, 3 }, default(bool), default(long));
             var sut = new Parser();
 
             // Exercize system
-            var result = sut.ParseArguments<FakeImmutableOptions>(new[] { "--stringvalue=strvalue", "-i1", "2", "3" });
+            var result = sut.ParseArguments<Immutable_Simple_Options>(new[] { "--stringvalue=strvalue", "-i1", "2", "3" });
 
             // Verify outcome
-            ((Parsed<FakeImmutableOptions>)result).Value.ShouldBeEquivalentTo(expectedOptions);
+            ((Parsed<Immutable_Simple_Options>)result).Value.ShouldBeEquivalentTo(expectedOptions);
             // Teardown
         }
 
@@ -270,11 +270,11 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser();
 
             // Exercize system
-            var result = sut.ParseArguments<FakeImmutableOptions>(new[] { "--help" });
+            var result = sut.ParseArguments<Immutable_Simple_Options>(new[] { "--help" });
 
             // Verify outcome
-            ((NotParsed<FakeImmutableOptions>)result).Errors.Should().HaveCount(x => x == 1);
-            ((NotParsed<FakeImmutableOptions>)result).Errors.Should().ContainSingle(e => e.Equals(expectedError));
+            ((NotParsed<Immutable_Simple_Options>)result).Errors.Should().HaveCount(x => x == 1);
+            ((NotParsed<Immutable_Simple_Options>)result).Errors.Should().ContainSingle(e => e.Equals(expectedError));
             // Teardown
         }
 
@@ -286,7 +286,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<FakeImmutableOptions>(new[] { "--help" });
+            sut.ParseArguments<Immutable_Simple_Options>(new[] { "--help" });
             var result = help.ToString();
 
             // Verify outcome
@@ -302,11 +302,11 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser();
 
             // Exercize system
-            var result = sut.ParseArguments<FakeOptions>(new[] { "--version" });
+            var result = sut.ParseArguments<Simple_Options>(new[] { "--version" });
 
             // Verify outcome
-            ((NotParsed<FakeOptions>)result).Errors.Should().HaveCount(x => x == 1);
-            ((NotParsed<FakeOptions>)result).Errors.Should().ContainSingle(e => e.Equals(expectedError));
+            ((NotParsed<Simple_Options>)result).Errors.Should().HaveCount(x => x == 1);
+            ((NotParsed<Simple_Options>)result).Errors.Should().ContainSingle(e => e.Equals(expectedError));
             // Teardown
         }
 
@@ -318,7 +318,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<FakeOptions>(new[] { "--version" });
+            sut.ParseArguments<Simple_Options>(new[] { "--version" });
             var result = help.ToString();
 
             // Verify outcome
@@ -337,7 +337,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(new string[] { });
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(new string[] { });
             var result = help.ToString();
 
             // Verify outcome
@@ -363,7 +363,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(new[] { "--help" });
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(new[] { "--help" });
             var result = help.ToString();
 
             // Verify outcome
@@ -388,7 +388,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(new[] { command });
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(new[] { command });
             var result = help.ToString();
 
             // Verify outcome
@@ -407,7 +407,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<FakeOptionsWithTwoRequiredAndSets>(new[] { "--weburl=value.com", "--ftpurl=value.org" });
+            sut.ParseArguments<Options_With_Two_Option_Required_Set_To_True_And_Two_Sets>(new[] { "--weburl=value.com", "--ftpurl=value.org" });
             var result = help.ToString();
 
             // Verify outcome
@@ -433,7 +433,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(new[] { "commit", "--help" });
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(new[] { "commit", "--help" });
             var result = help.ToString();
 
             // Verify outcome
@@ -449,7 +449,7 @@ namespace CommandLine.Tests.Unit
             var sut = new Parser(config => config.HelpWriter = help);
 
             // Exercize system
-            sut.ParseArguments<AddOptionsWithUsage, CommitOptionsWithUsage, CloneOptionsWithUsage>(
+            sut.ParseArguments<Add_Verb_With_Usage_Attribute, Commit_Verb_With_Usage_Attribute, Clone_Verb_With_Usage_Attribute>(
                 new[] { "clone", "--badoption=@bad?value" });
             var result = help.ToString();
 
@@ -474,17 +474,43 @@ namespace CommandLine.Tests.Unit
             // Teardown
         }
 
+        [Fact]
+        public void Specific_verb_help_screen_should_be_displayed_regardless_other_argument()
+        {
+            // Fixture setup
+            var help = new StringWriter();
+            var sut = new Parser(config => config.HelpWriter = help);
+
+            // Exercize system
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(
+                new[] { "help", "clone", "extra-arg" });
+            var result = help.ToString();
+
+            // Verify outcome
+            var lines = result.ToNotEmptyLines().TrimStringArray();
+            lines[0].Should().StartWithEquivalent("CommandLine");
+            lines[1].ShouldBeEquivalentTo("Copyright (c) 2005 - 2015 Giacomo Stelluti Scala");
+            lines[2].ShouldBeEquivalentTo("--no-hardlinks    Optimize the cloning process from a repository on a local");
+            lines[3].ShouldBeEquivalentTo("filesystem by copying files.");
+            lines[4].ShouldBeEquivalentTo("-q, --quiet       Suppress summary message.");
+            lines[5].ShouldBeEquivalentTo("--help            Display this help screen.");
+            lines[6].ShouldBeEquivalentTo("--version         Display version information.");
+            lines[7].ShouldBeEquivalentTo("value pos. 0");
+
+            // Teardown
+        }
+
         [Theory]
         [MemberData("IgnoreUnknownArgumentsData")]
         public void When_IgnoreUnknownArguments_is_set_valid_unknown_arguments_avoid_a_failure_parsing(
             string[] arguments,
-            FakeOptions expected)
+            Simple_Options expected)
         {
             // Fixture setup
             var sut = new Parser(config => config.IgnoreUnknownArguments = true);
 
             // Exercize system
-            var result = sut.ParseArguments<FakeOptions>(arguments);
+            var result = sut.ParseArguments<Simple_Options>(arguments);
 
             // Verify outcome
             result.Tag.ShouldBeEquivalentTo(ParserResultType.Parsed);
@@ -497,13 +523,13 @@ namespace CommandLine.Tests.Unit
         [MemberData("IgnoreUnknownArgumentsForVerbsData")]
         public void When_IgnoreUnknownArguments_is_set_valid_unknown_arguments_avoid_a_failure_parsing_for_verbs(
             string[] arguments,
-            CommitOptions expected)
+            Commit_Verb expected)
         {
             // Fixture setup
             var sut = new Parser(config => config.IgnoreUnknownArguments = true);
 
             // Exercize system
-            var result = sut.ParseArguments<AddOptions, CommitOptions, CloneOptions>(arguments);
+            var result = sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(arguments);
 
             // Verify outcome
             result.Tag.ShouldBeEquivalentTo(ParserResultType.Parsed);
@@ -512,13 +538,41 @@ namespace CommandLine.Tests.Unit
             // Teardown
         }
 
+        [Fact]
+        public void Properly_formatted_help_screen_excludes_help_as_unknown_option()
+        {
+            // Fixture setup
+            var help = new StringWriter();
+            var sut = new Parser(config => config.HelpWriter = help);
+
+            // Exercize system
+            sut.ParseArguments<Add_Verb, Commit_Verb, Clone_Verb>(
+                new[] { "clone", "--bad-arg", "--help" });
+            var result = help.ToString();
+
+            // Verify outcome
+            var lines = result.ToNotEmptyLines().TrimStringArray();
+            lines[0].Should().StartWithEquivalent("CommandLine");
+            lines[1].ShouldBeEquivalentTo("Copyright (c) 2005 - 2015 Giacomo Stelluti Scala");
+            lines[2].ShouldBeEquivalentTo("ERROR(S):");
+            lines[3].ShouldBeEquivalentTo("Option 'bad-arg' is unknown.");
+            lines[4].ShouldBeEquivalentTo("--no-hardlinks    Optimize the cloning process from a repository on a local");
+            lines[5].ShouldBeEquivalentTo("filesystem by copying files.");
+            lines[6].ShouldBeEquivalentTo("-q, --quiet       Suppress summary message.");
+            lines[7].ShouldBeEquivalentTo("--help            Display this help screen.");
+            lines[8].ShouldBeEquivalentTo("--version         Display version information.");
+            lines[9].ShouldBeEquivalentTo("value pos. 0");
+
+            // Teardown
+        }
+
         public static IEnumerable<object> IgnoreUnknownArgumentsData
         {
             get
             {
-                yield return new object[] { new[] { "--stringvalue=strdata0", "--unknown=valid" }, new FakeOptions { StringValue = "strdata0", IntSequence = Enumerable.Empty<int>() } };
-                yield return new object[] { new[] { "--stringvalue=strdata0", "1234", "--unknown", "-i", "1", "2", "3" }, new FakeOptions { StringValue = "strdata0", LongValue = 1234L, IntSequence = new[] { 1, 2, 3 } } };
-                yield return new object[] { new[] { "--stringvalue=strdata0", "-u" }, new FakeOptions { StringValue = "strdata0", IntSequence = Enumerable.Empty<int>() } };
+                yield return new object[] { new[] { "--stringvalue=strdata0", "--unknown=valid" }, new Simple_Options { StringValue = "strdata0", IntSequence = Enumerable.Empty<int>() } };
+                yield return new object[] { new[] { "--stringvalue=strdata0", "1234", "--unknown", "-i", "1", "2", "3" }, new Simple_Options { StringValue = "strdata0", LongValue = 1234L, IntSequence = new[] { 1, 2, 3 } } };
+                yield return new object[] { new[] { "--stringvalue=strdata0", "-u" }, new Simple_Options { StringValue = "strdata0", IntSequence = Enumerable.Empty<int>() } };
             }
         }
 
@@ -526,8 +580,8 @@ namespace CommandLine.Tests.Unit
         {
             get
             {
-                yield return new object[] { new[] { "commit", "-up" }, new CommitOptions { Patch =  true } };
-                yield return new object[] { new[] { "commit", "--amend", "--unknown", "valid" }, new CommitOptions { Amend = true } };
+                yield return new object[] { new[] { "commit", "-up" }, new Commit_Verb { Patch =  true } };
+                yield return new object[] { new[] { "commit", "--amend", "--unknown", "valid" }, new Commit_Verb { Amend = true } };
             }
         }
     }

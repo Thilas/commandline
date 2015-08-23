@@ -9,7 +9,7 @@ using RailwaySharp.ErrorHandling;
 
 namespace CommandLine.Core
 {
-    internal static class ValueMapper
+    static class ValueMapper
     {
         public static Result<
             IEnumerable<SpecificationProperty>, Error>
@@ -37,7 +37,7 @@ namespace CommandLine.Core
                 yield break;
             }
             var pt = specProps.First();
-            var taken = values.Take(pt.Specification.CountOfMaxNumberOfValues().Return(n => n, values.Count()));
+            var taken = values.Take(pt.Specification.CountOfMaxNumberOfValues().MapValueOrDefault(n => n, values.Count()));
             if (taken.Empty())
             {
                 yield return
@@ -58,7 +58,7 @@ namespace CommandLine.Core
 
             yield return
                 converter(taken, pt.Property.PropertyType, pt.Specification.TargetType != TargetType.Sequence)
-                    .Return(
+                    .MapValueOrDefault(
                         converted => Tuple.Create(pt.WithValue(Maybe.Just(converted)), Maybe.Nothing<Error>()),
                         Tuple.Create<SpecificationProperty, Maybe<Error>>(
                             pt, Maybe.Just<Error>(new BadFormatConversionError(NameInfo.EmptyName))));
@@ -78,7 +78,7 @@ namespace CommandLine.Core
                 case TargetType.Sequence:
                     if (specification.Max.IsJust())
                     {
-                        return Maybe.Just(specification.Max.FromJust());
+                        return Maybe.Just(specification.Max.FromJustOrFail());
                     }
                     break;
             }

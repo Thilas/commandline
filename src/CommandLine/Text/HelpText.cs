@@ -213,7 +213,7 @@ namespace CommandLine.Text
             {
                 errors = ((NotParsed<T>)parserResult).Errors;
 
-                if (FilterMeaningfulErrors(errors).Any())
+                if (errors.OnlyMeaningfulOnes().Any())
                     auto = onError(auto);
             }
 
@@ -288,7 +288,7 @@ namespace CommandLine.Text
             if (parserResult == null) throw new ArgumentNullException("parserResult");
             if (current == null) throw new ArgumentNullException("current");
 
-            if (FilterMeaningfulErrors(((NotParsed<T>)parserResult).Errors).Empty())
+            if (((NotParsed<T>)parserResult).Errors.OnlyMeaningfulOnes().Empty())
                 return current;
 
             var errors = RenderParsingErrorsTextAsLines(parserResult,
@@ -484,7 +484,7 @@ namespace CommandLine.Text
             if (parserResult == null) throw new ArgumentNullException("parserResult");
 
             var meaningfulErrors =
-                FilterMeaningfulErrors(((NotParsed<T>)parserResult).Errors);
+                ((NotParsed<T>)parserResult).Errors.OnlyMeaningfulOnes();
             if (meaningfulErrors.Empty())
                 yield break;
 
@@ -546,7 +546,7 @@ namespace CommandLine.Text
             if (usage.MatchNothing())
                 yield break;
 
-            var usageTuple = usage.FromJust();
+            var usageTuple = usage.FromJustOrFail();
             var examples = usageTuple.Item2;
             var appAlias = usageTuple.Item1.ApplicationAlias ?? ReflectionHelper.GetAssemblyName();
 
@@ -594,11 +594,6 @@ namespace CommandLine.Text
                         optionsHelp.SafeToString())
                     .AppendWhen(postOptionsHelp.Length > 0, Environment.NewLine, postOptionsHelp.ToString())
                 .ToString();
-        }
-
-        private static IEnumerable<Error> FilterMeaningfulErrors(IEnumerable<Error> errors)
-        {
-            return errors.Where(e => e.Tag != ErrorType.HelpRequestedError && e.Tag != ErrorType.HelpVerbRequestedError);
         }
 
         private static void AddLine(StringBuilder builder, string value, int maximumLength)

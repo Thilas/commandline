@@ -70,10 +70,26 @@ namespace CommandLine
     public abstract class Error : IEquatable<Error>
     {
         private readonly ErrorType tag;
+        private readonly bool stopsProcessing;
 
-        internal Error(ErrorType tag)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandLine.Error"/> class.
+        /// </summary>
+        /// <param name="tag">Type discriminator tag.</param>
+        /// <param name="stopsProcessing">Tells if error stops parsing process.</param>
+        protected internal Error(ErrorType tag, bool stopsProcessing)
         {
             this.tag = tag;
+            this.stopsProcessing = stopsProcessing;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandLine.Error"/> class.
+        /// </summary>
+        /// <param name="tag">Type discriminator tag.</param>
+        protected internal Error(ErrorType tag)
+            : this(tag, false)
+        {
         }
 
         /// <summary>
@@ -82,6 +98,15 @@ namespace CommandLine
         public ErrorType Tag
         {
             get { return tag; }
+        }
+
+        /// <summary>
+        /// Tells if error stops parsing process.
+        /// Filtered by <see cref="CommandLine.ErrorExtensions.OnlyMeaningfulOnes(System.Collections.Generic.IEnumerable{Error})"/>.
+        /// </summary>
+        public bool StopsProcessing
+        {
+            get { return stopsProcessing; }
         }
 
         /// <summary>
@@ -106,7 +131,7 @@ namespace CommandLine
         /// <remarks>A hash code for the current <see cref="System.Object"/>.</remarks>
         public override int GetHashCode()
         {
-            return Tag.GetHashCode();
+            return new { Tag, StopsProcessing }.GetHashCode();
         }
 
         /// <summary>
@@ -132,7 +157,7 @@ namespace CommandLine
     {
         private readonly string token;
 
-        internal TokenError(ErrorType tag, string token)
+        protected internal TokenError(ErrorType tag, string token)
             : base(tag)
         {
             if (token == null) throw new ArgumentNullException("token");
@@ -170,7 +195,7 @@ namespace CommandLine
         /// <remarks>A hash code for the current <see cref="System.Object"/>.</remarks>
         public override int GetHashCode()
         {
-            return new {Tag, Token}.GetHashCode();
+            return new {Tag, StopsProcessing, Token}.GetHashCode();
         }
 
         /// <summary>
@@ -207,7 +232,7 @@ namespace CommandLine
     {
         private readonly NameInfo nameInfo;
 
-        internal NamedError(ErrorType tag, NameInfo nameInfo)
+        protected internal NamedError(ErrorType tag, NameInfo nameInfo)
             : base(tag)
         {
             this.nameInfo = nameInfo;
@@ -243,7 +268,7 @@ namespace CommandLine
         /// <remarks>A hash code for the current <see cref="System.Object"/>.</remarks>
         public override int GetHashCode()
         {
-            return new {Tag, NameInfo}.GetHashCode();
+            return new {Tag, StopsProcessing, NameInfo}.GetHashCode();
         }
 
         /// <summary>
@@ -367,7 +392,7 @@ namespace CommandLine
     public sealed class HelpRequestedError : Error
     {
         internal HelpRequestedError()
-            : base(ErrorType.HelpRequestedError)
+            : base(ErrorType.HelpRequestedError, true)
         {
         }
     }
@@ -382,7 +407,7 @@ namespace CommandLine
         private readonly bool matched;
 
         internal HelpVerbRequestedError(string verb, Type type, bool matched)
-            : base(ErrorType.HelpVerbRequestedError)
+            : base(ErrorType.HelpVerbRequestedError, true)
         {
             this.verb = verb;
             this.type = type;
@@ -431,7 +456,7 @@ namespace CommandLine
     public sealed class VersionRequestedError : Error
     {
         internal VersionRequestedError()
-            : base(ErrorType.VersionRequestedError)
+            : base(ErrorType.VersionRequestedError, true)
         {
         }
     }

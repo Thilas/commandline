@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
-
 using CommandLine.Core;
 using CommandLine.Tests.Fakes;
 using CommandLine.Text;
@@ -53,7 +51,7 @@ namespace CommandLine.Tests.Unit.Text
             // Exercize system 
             var sut = new HelpText { AddDashesToOption = true }
                 .AddPreOptionsLine("pre-options")
-                .AddOptions(new NotParsed<FakeOptions>(TypeInfo.Create(typeof(FakeOptions)), Enumerable.Empty<Error>()))
+                .AddOptions(new NotParsed<Simple_Options>(TypeInfo.Create(typeof(Simple_Options)), Enumerable.Empty<Error>()))
                 .AddPostOptionsLine("post-options");
 
             // Verify outcome
@@ -77,7 +75,7 @@ namespace CommandLine.Tests.Unit.Text
             // Exercize system 
             var sut = new HelpText { AddDashesToOption = true, AddEnumValuesToHelpText = true }
                 .AddPreOptionsLine("pre-options")
-                .AddOptions(new NotParsed<FakeOptionsWithHelpTextEnum>(TypeInfo.Create(typeof(FakeOptionsWithHelpTextEnum)), Enumerable.Empty<Error>()))
+                .AddOptions(new NotParsed<Options_With_Enum_Having_HelpText>(TypeInfo.Create(typeof(Options_With_Enum_Having_HelpText)), Enumerable.Empty<Error>()))
                 .AddPostOptionsLine("post-options");
 
             // Verify outcome
@@ -100,7 +98,7 @@ namespace CommandLine.Tests.Unit.Text
             // Exercize system 
             var sut = new HelpText { AddDashesToOption = true }
                 .AddPreOptionsLine("pre-options")
-                .AddOptions(new NotParsed<FakeOptionsWithHelpTextEnum>(TypeInfo.Create(typeof(FakeOptionsWithHelpTextEnum)), Enumerable.Empty<Error>()))
+                .AddOptions(new NotParsed<Options_With_Enum_Having_HelpText>(TypeInfo.Create(typeof(Options_With_Enum_Having_HelpText)), Enumerable.Empty<Error>()))
                 .AddPostOptionsLine("post-options");
 
             // Verify outcome
@@ -122,7 +120,7 @@ namespace CommandLine.Tests.Unit.Text
             // Exercize system 
             var sut =
                 new HelpText("Meta Value.").AddOptions(
-                    new NotParsed<FakeOptionsWithMetaValue>(TypeInfo.Create(typeof(FakeOptionsWithMetaValue)), Enumerable.Empty<Error>()));
+                    new NotParsed<Options_With_MetaValue>(TypeInfo.Create(typeof(Options_With_MetaValue)), Enumerable.Empty<Error>()));
 
             // Verify outcome
             var lines = sut.ToString().ToNotEmptyLines().TrimStringArray();
@@ -139,8 +137,8 @@ namespace CommandLine.Tests.Unit.Text
             var sut = new HelpText(new HeadingInfo("CommandLine.Tests.dll", "1.9.4.131"));
             sut.MaximumDisplayWidth = 40;
             sut.AddOptions(
-                new NotParsed<FakeOptionsWithLongDescription>(
-                    TypeInfo.Create(typeof(FakeOptionsWithLongDescription)),
+                new NotParsed<Simple_Options_With_HelpText_Set_To_Long_Description>(
+                    TypeInfo.Create(typeof(Simple_Options_With_HelpText_Set_To_Long_Description)),
                     Enumerable.Empty<Error>()));
 
             // Verify outcome
@@ -162,8 +160,8 @@ namespace CommandLine.Tests.Unit.Text
             var sut = new HelpText(new HeadingInfo("CommandLine.Tests.dll", "1.9.4.131"));
             sut.MaximumDisplayWidth = 40;
             sut.AddOptions(
-                new NotParsed<FakeOptionsWithLongDescriptionAndNoSpaces>(
-                    TypeInfo.Create(typeof(FakeOptionsWithLongDescriptionAndNoSpaces)),
+                new NotParsed<Simple_Options_With_HelpText_Set_To_Long_Description_Without_Spaces>(
+                    TypeInfo.Create(typeof(Simple_Options_With_HelpText_Set_To_Long_Description_Without_Spaces)),
                     Enumerable.Empty<Error>()));
 
             // Verify outcome
@@ -185,7 +183,7 @@ namespace CommandLine.Tests.Unit.Text
             var sut = new HelpText("Heading Info.");
             sut.MaximumDisplayWidth = 40;
             sut.AddPreOptionsLine("Before 0123456789012345678901234567890123456789012 After")
-                .AddOptions(new NotParsed<FakeOptionsForHelp>(TypeInfo.Create(typeof(FakeOptionsForHelp)), Enumerable.Empty<Error>()))
+                .AddOptions(new NotParsed<Simple_Options_Without_HelpText>(TypeInfo.Create(typeof(Simple_Options_Without_HelpText)), Enumerable.Empty<Error>()))
                 .AddPostOptionsLine("Before 0123456789012345678901234567890123456789 After");
 
             // Verify outcome
@@ -263,8 +261,8 @@ namespace CommandLine.Tests.Unit.Text
         public void Invoke_AutoBuild_for_Options_returns_appropriate_formatted_text()
         {
             // Fixture setup
-            var fakeResult = new NotParsed<FakeOptions>(
-                TypeInfo.Create(typeof(FakeOptions)),
+            var fakeResult = new NotParsed<Simple_Options>(
+                TypeInfo.Create(typeof(Simple_Options)),
                 new Error[]
                     {
                         new BadFormatTokenError("badtoken"),
@@ -296,7 +294,7 @@ namespace CommandLine.Tests.Unit.Text
                 TypeInfo.Create(typeof(NullInstance)),
                 new Error[]
                     {
-                        new HelpVerbRequestedError("commit", typeof(CommitOptions), true)
+                        new HelpVerbRequestedError("commit", typeof(Commit_Verb), true)
                     });
 
             // Exercize system
@@ -320,7 +318,7 @@ namespace CommandLine.Tests.Unit.Text
         {
             // Fixture setup
             var verbTypes = Enumerable.Empty<Type>().Concat(
-                new[] { typeof(AddOptions), typeof(CommitOptions), typeof(CloneOptions) });
+                new[] { typeof(Add_Verb), typeof(Commit_Verb), typeof(Clone_Verb) });
             var fakeResult = new NotParsed<object>(
                 TypeInfo.Create(typeof(NullInstance),
                     verbTypes),
@@ -349,7 +347,7 @@ namespace CommandLine.Tests.Unit.Text
             // Exercize system 
             var sut = new HelpText { AddDashesToOption = true }
                 .AddPreOptionsLine("pre-options")
-                .AddOptions(new NotParsed<FakeOptionsWithHelpTextValue>(TypeInfo.Create(typeof(FakeOptionsWithHelpTextValue)), Enumerable.Empty<Error>()))
+                .AddOptions(new NotParsed<Options_With_HelpText_And_MetaValue>(TypeInfo.Create(typeof(Options_With_HelpText_And_MetaValue)), Enumerable.Empty<Error>()))
                 .AddPostOptionsLine("post-options");
 
             // Verify outcome
@@ -371,9 +369,9 @@ namespace CommandLine.Tests.Unit.Text
         public static void RenderUsageText_returns_properly_formatted_text()
         {
             // Fixture setup
-            ParserResult<FakeOptionsWithUsageText> result =
-                new NotParsed<FakeOptionsWithUsageText>(
-                    TypeInfo.Create(typeof(FakeOptionsWithUsageText)), Enumerable.Empty<Error>());
+            ParserResult<Options_With_Usage_Attribute> result =
+                new NotParsed<Options_With_Usage_Attribute>(
+                    TypeInfo.Create(typeof(Options_With_Usage_Attribute)), Enumerable.Empty<Error>());
             
             // Exercize system
             var text = HelpText.RenderUsageText(result);
@@ -395,8 +393,8 @@ namespace CommandLine.Tests.Unit.Text
         public void Invoke_AutoBuild_for_Options_with_Usage_returns_appropriate_formatted_text()
         {
             // Fixture setup
-            var fakeResult = new NotParsed<FakeOptionsWithUsageText>(
-                TypeInfo.Create(typeof(FakeOptionsWithUsageText)),
+            var fakeResult = new NotParsed<Options_With_Usage_Attribute>(
+                TypeInfo.Create(typeof(Options_With_Usage_Attribute)),
                 new Error[]
                     {
                         new BadFormatTokenError("badtoken")
@@ -437,8 +435,8 @@ namespace CommandLine.Tests.Unit.Text
             // Fixture setup
             var handlers = new CultureInfo("en-US").MakeCultureHandlers();
             var fakeResult =
-                new NotParsed<FakeOptionsWithDefaultSetToSequence>(
-                    typeof(FakeOptionsWithDefaultSetToSequence).ToTypeInfo(),
+                new NotParsed<Options_With_Default_Set_To_Sequence>(
+                    typeof(Options_With_Default_Set_To_Sequence).ToTypeInfo(),
                     new Error[] { new BadFormatTokenError("badtoken") });
 
             // Exercize system

@@ -3,7 +3,7 @@
 [![Nuget](https://img.shields.io/nuget/v/commandlineparser.svg)](http://nuget.org/packages/commandlineparser)
 [![Nuget](https://img.shields.io/nuget/vpre/commandlineparser.svg)](http://nuget.org/packages/commandlineparser)
 
-Command Line Parser Library 2.0.231.0 beta for CLR.
+Command Line Parser Library 2.0.251.0 beta for CLR.
 ===
 The Command Line Parser Library offers CLR applications a clean and concise API for manipulating command line arguments and related tasks, such as defining switches, options and verb commands. It allows you to display a help screen with a high degree of customization and a simple way to report syntax errors to the end user.
 
@@ -53,6 +53,10 @@ Latest changes are recorded from Version 1.9.4.91, please refer to [this documen
 Used by:
 ---
 - [FSharp.Formatting](https://github.com/tpetricek/FSharp.Formatting) by @tpetricek.
+- [MiniDumper](https://github.com/goldshtn/minidumper) by @goldshtn.
+- [Google APIs Client Library for .NET](https://github.com/google/google-api-dotnet-client) by Google.
+- [FSpec](https://github.com/PeteProgrammer/fspec) by @PeteProgrammer.
+- Various commercial products.
 
 Notes:
 ---
@@ -74,7 +78,7 @@ class Options {
 
   [Option(Default = "中文",
     HelpText = "Content language.")]
-  public Language { get; set; }
+  public string Language { get; set; }
 
   [Value(0, MetaName = "offset",
     HelpText = "File offset.")]
@@ -87,7 +91,7 @@ Consume them:
 static int Main(string[] args) {
   var result = CommandLine.Parser.Default.ParseArguments<Options>(args);
   var exitCode = result
-    .Return(
+    .MapResult(
       options = > {
         if (options.Verbose) Console.WriteLine("Filenames: {0}", string.Join(",", options.InputFiles.ToArray()));
         return 0; },
@@ -134,7 +138,7 @@ class CloneOptions {
 
 int Main(string[] args) {
   return CommandLine.Parser.Default.ParseArguments<AddOptions, CommitOptions, CloneOptions>(args)
-    .Return(
+    .MapResult(
       (AddOptions opts) => RunAddAndReturnExitCode(opts),
       (CommitOptions opts) => RunCommitAndReturnExitCode(opts),
       (CloneOptions opts) => RunCloneAndReturnExitCode(opts),
@@ -242,6 +246,14 @@ Latest Changes:
   - PR #215 (by @Thilas) Merged.
   - PR #216 (by @Thilas) Merged.
   - Issue #217 Fixed.
+  - Renaming tests fakes.
+  - Issue #220 Implemented.
+  - Replacing Either<L,R> with Result<TSucc, TMsg>.
+  - Internal refactoring.
+  - Centralizing `Tokenizer` configuration.
+  - Issue #225 (reported by @rmunn) Fixed.
+  - Issue #225/b (reported by @rmunn) Fixed.
+  - All `ParserResult<T>.Return` renamed to `MapResult`.
 
 Contact:
 ---

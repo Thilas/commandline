@@ -10,29 +10,8 @@ using RailwaySharp.ErrorHandling;
 
 namespace CommandLine.Core
 {
-    internal static class InstanceChooser
+    static class InstanceChooser
     {
-        public static ParserResult<object> Choose(
-            IEnumerable<Type> types,
-            IEnumerable<string> arguments,
-            StringComparer nameComparer,
-            CultureInfo parsingCulture,
-            IEnumerable<ErrorType> nonFatalErrors)
-        {
-            return Choose(
-                (args, optionSpecs) =>
-                    {
-                        var tokens = Tokenizer.Tokenize(args, name => NameLookup.Contains(name, optionSpecs, nameComparer));
-                        var explodedTokens = Tokenizer.ExplodeOptionList(tokens, name => NameLookup.HavingSeparator(name, optionSpecs, nameComparer));
-                        return explodedTokens;
-                    },
-                types,
-                arguments,
-                nameComparer,
-                parsingCulture,
-                nonFatalErrors);
-        }
-
         public static ParserResult<object> Choose(
             Func<IEnumerable<string>, IEnumerable<OptionSpecification>, Result<IEnumerable<Token>, Error>> tokenizer,
             IEnumerable<Type> types,
@@ -41,26 +20,28 @@ namespace CommandLine.Core
             CultureInfo parsingCulture,
             IEnumerable<ErrorType> nonFatalErrors)
         {
-            if (arguments.Empty())
+            Func<ParserResult<object>> choose = () =>
             {
-                return MakeNotParsed(types, new NoVerbSelectedError());
-            }
+                var firstArg = arguments.First();
 
-            var firstArg = arguments.First();
+                Func<string, bool> preprocCompare = command =>
+                        nameComparer.Equals(command, firstArg) ||
+                        nameComparer.Equals(string.Concat("--", command), firstArg);
 
-            Func<string, bool> preprocCompare = command =>
-                    nameComparer.Equals(command, firstArg) ||
-                    nameComparer.Equals(string.Concat("--", command), firstArg);
+                var verbs = Verb.SelectFromTypes(types);
 
-            var verbs = Verb.SelectFromTypes(types);
+                return preprocCompare("help")
+                    ? MakeNotParsed(types,
+                        MakeHelpVerbRequestedError(verbs,
+                            arguments.Skip(1).FirstOrDefault() ?? string.Empty, nameComparer))
+                    : preprocCompare("version")
+                        ? MakeNotParsed(types, new VersionRequestedError())
+                        : MatchVerb(tokenizer, verbs, arguments, nameComparer, parsingCulture, nonFatalErrors);
+            };
 
-            return preprocCompare("help")
-                ? MakeNotParsed(types,
-                    MakeHelpVerbRequestedError(verbs,
-                        arguments.Skip(1).SingleOrDefault() ?? string.Empty, nameComparer))
-                : preprocCompare("version")
-                    ? MakeNotParsed(types, new VersionRequestedError())
-                    : MatchVerb(tokenizer, verbs, arguments, nameComparer, parsingCulture, nonFatalErrors);
+            return arguments.Any()
+                ? choose()
+                : MakeNotParsed(types, new NoVerbSelectedError());
         }
 
         private static ParserResult<object> MatchVerb(
@@ -92,7 +73,7 @@ namespace CommandLine.Core
             return verb.Length > 0
                 ? verbs.SingleOrDefault(v => nameComparer.Equals(v.Item1.Name, verb))
                         .ToMaybe()
-                        .Return(
+                        .MapValueOrDefault(
                             v => new HelpVerbRequestedError(v.Item1.Name, v.Item2, true),
                             new HelpVerbRequestedError(null, null, false))
                 : new HelpVerbRequestedError(null, null, false);

@@ -7,14 +7,14 @@ using CSharpx;
 
 namespace CommandLine.Core
 {
-    internal static class Switch
+    static class Switch
     {
         public static IEnumerable<Token> Partition(
             IEnumerable<Token> tokens,
             Func<string, Maybe<TypeDescriptor>> typeLookup)
         {
             return from t in tokens
-                   where typeLookup(t.Text).Return(info => t.IsName() && info.TargetType == TargetType.Switch, false)
+                   where typeLookup(t.Text).MapValueOrDefault(info => t.IsName() && info.TargetType == TargetType.Switch, false)
                    select t;
         }
     }

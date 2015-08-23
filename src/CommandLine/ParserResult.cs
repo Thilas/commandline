@@ -149,7 +149,7 @@ namespace CommandLine
             }
 
             return this.Tag.Equals(other.Tag)
-                    && Value.Equals(other.Value);
+                && Value.Equals(other.Value);
         }
     }
 
@@ -197,7 +197,6 @@ namespace CommandLine
         /// <remarks>A hash code for the current <see cref="System.Object"/>.</remarks>
         public override int GetHashCode()
         {
-            //return new { Value, Errors }.GetHashCode();
             return new { Tag, Errors }.GetHashCode();
         }
 
@@ -213,20 +212,8 @@ namespace CommandLine
                 return false;
             }
 
-            return this.Tag.Equals(other.Tag) && Errors.SequenceEqual(other.Errors);
-        }
-    }
-
-    partial class ParserResultExtensions
-    {
-        internal static ParserResult<T> MapErrors<T>(
-            this ParserResult<T> parserResult,
-            Func<IEnumerable<Error>, IEnumerable<Error>> func)
-        {
-            var notParsed = parserResult as NotParsed<T>;
-            if (notParsed != null)
-                return new NotParsed<T>(notParsed.TypeInfo, func(notParsed.Errors));
-            return parserResult;
+            return this.Tag.Equals(other.Tag)
+                && Errors.SequenceEqual(other.Errors);
         }
     }
 }

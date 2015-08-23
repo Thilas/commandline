@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CommandLine.Infrastructure
 {
-    internal static class StringExtensions
+    static class StringExtensions
     {
         public static string ToOneCharString(this char c)
         {
@@ -41,6 +41,11 @@ namespace CommandLine.Infrastructure
         public static bool EqualsOrdinal(this string strA, string strB)
         {
             return string.CompareOrdinal(strA, strB) == 0;
+        }
+
+        public static bool EqualsOrdinalIgnoreCase(this string strA, string strB)
+        {
+            return string.Compare(strA, strB, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
         public static int SafeLength(this string value)

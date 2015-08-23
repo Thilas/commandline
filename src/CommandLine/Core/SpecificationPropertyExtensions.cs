@@ -7,7 +7,7 @@ using CSharpx;
 
 namespace CommandLine.Core
 {
-    internal static class SpecificationPropertyExtensions
+    static class SpecificationPropertyExtensions
     {
         public static SpecificationProperty WithSpecification(this SpecificationProperty specProp, Specification newSpecification)
         {
@@ -31,7 +31,7 @@ namespace CommandLine.Core
                     return specProp.Property.PropertyType.GetGenericArguments()
                              .SingleOrDefault()
                              .ToMaybe()
-                             .FromJust(
+                             .FromJustOrFail(
                                  new InvalidOperationException("Sequence properties should be of type IEnumerable<T>."));
                 default:
                     return specProp.Property.PropertyType;

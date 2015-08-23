@@ -8,20 +8,20 @@ using CSharpx;
 
 namespace CommandLine.Core
 {
-    internal enum SpecificationType
+    enum SpecificationType
     {
         Option,
         Value
     }
 
-    internal enum TargetType
+    enum TargetType
     {
         Switch,
         Scalar,
         Sequence
     }
 
-    internal abstract class Specification
+    abstract class Specification
     {
         private readonly SpecificationType tag;
         private readonly bool required;
@@ -31,9 +31,7 @@ namespace CommandLine.Core
         private readonly string helpText;
         private readonly string metaValue;
         private readonly IEnumerable<string> enumValues;
-        /// <summary>
         /// This information is denormalized to decouple Specification from PropertyInfo.
-        /// </summary>
         private readonly Type conversionType;
         private readonly TargetType targetType;
 

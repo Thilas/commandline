@@ -1,3 +1,33 @@
+2015-08-20    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+* All ParserResult<T>.Return renamed to MapResult.
+
+2015-08-19    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+* Issue #225 (reported by @rmunn) Fixed.
+* Issue #225/b (reported by @rmunn) Fixed.
+
+2015-08-15    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Centralizing Tokenizer configuration.
+
+2015-08-14    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Internal refactoring.
+
+2015-08-13    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Replacing Either<L,R> with Result<TSucc, TMsg>.
+
+2015-08-10    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Internal refactoring.
+
+2015-08-07    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Renaming tests fakes.
+  * Issue #220 Implemented.
+
 2015-08-06    Giacomo Stelluti Scala  <gsscoder@gmail.com>
 
   * PR #216 (by @Thilas) Merged.

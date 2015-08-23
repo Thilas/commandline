@@ -8,7 +8,7 @@ using RailwaySharp.ErrorHandling;
 
 namespace CommandLine.Core
 {
-    internal static class OptionMapper
+    static class OptionMapper
     {
         public static Result<
             IEnumerable<SpecificationProperty>, Error>
@@ -24,9 +24,9 @@ namespace CommandLine.Core
                             s =>
                             s.Key.MatchName(((OptionSpecification)pt.Specification).ShortName, ((OptionSpecification)pt.Specification).LongName, comparer))
                                .ToMaybe()
-                               .Return(sequence =>
+                               .MapValueOrDefault(sequence =>
                                     converter(sequence.Value, pt.Property.PropertyType, pt.Specification.TargetType != TargetType.Sequence)
-                                    .Return(converted =>
+                                    .MapValueOrDefault(converted =>
                                             Tuple.Create(
                                                 pt.WithValue(Maybe.Just(converted)),
                                                 Maybe.Nothing<Error>()),

@@ -92,7 +92,7 @@ namespace CommandLine
                 : Maybe.Nothing<Func<T>>();
 
             return MakeParserResult(
-                () => InstanceBuilder.Build(
+                InstanceBuilder.Build(
                     factory,
                     (arguments, optionSpecs) => Tokenize(arguments, optionSpecs, settings),
                     args,
@@ -120,7 +120,7 @@ namespace CommandLine
             if (args == null) throw new ArgumentNullException("args");
 
             return MakeParserResult(
-                () => InstanceBuilder.Build(
+                InstanceBuilder.Build(
                     Maybe.Just(factory),
                     (arguments, optionSpecs) => Tokenize(arguments, optionSpecs, settings),
                     args,
@@ -149,7 +149,7 @@ namespace CommandLine
             if (types.Length == 0) throw new ArgumentOutOfRangeException("types");
 
             return MakeParserResult(
-                () => InstanceChooser.Choose(
+                InstanceChooser.Choose(
                     (arguments, optionSpecs) => Tokenize(arguments, optionSpecs, settings),
                     types,
                     args,
@@ -174,26 +174,29 @@ namespace CommandLine
                 IEnumerable<OptionSpecification> optionSpecs,
                 ParserSettings settings)
         {
-            var normalize = settings.IgnoreUnknownArguments
-                ? toks => Tokenizer.Normalize(toks,
-                    name => NameLookup.Contains(name, optionSpecs, settings.NameComparer) != NameLookupResult.NoOptionFound)
-                : new Func<IEnumerable<Token>, IEnumerable<Token>>(toks => toks);
-
-            var tokens = settings.EnableDashDash
-                ? Tokenizer.PreprocessDashDash(
-                        arguments,
-                        args =>
-                            Tokenizer.Tokenize(args, name => NameLookup.Contains(name, optionSpecs, settings.NameComparer), normalize))
-                : Tokenizer.Tokenize(arguments, name => NameLookup.Contains(name, optionSpecs, settings.NameComparer), normalize);
-            var explodedTokens = Tokenizer.ExplodeOptionList(tokens, name => NameLookup.HavingSeparator(name, optionSpecs, settings.NameComparer));
-            return explodedTokens;
+            return
+                Tokenizer.ConfigureTokenizer(
+                    settings.NameComparer,
+                    settings.IgnoreUnknownArguments,
+                    settings.EnableDashDash)(arguments, optionSpecs);
         }
 
-        private static ParserResult<T> MakeParserResult<T>(Func<ParserResult<T>> parseFunc, ParserSettings settings)
+        private static ParserResult<T> MakeParserResult<T>(ParserResult<T> parserResult, ParserSettings settings)
         {
             return DisplayHelp(
-                parseFunc(),
+                parserResult,
                 settings.HelpWriter);
+        }
+
+        private static ParserResult<T> DisplayHelp<T>(ParserResult<T> parserResult, TextWriter helpWriter)
+        {
+            parserResult.WithNotParsed(
+                errors =>
+                    Maybe.Merge(errors.ToMaybe(), helpWriter.ToMaybe())
+                        .Do((_, writer) => writer.Write(HelpText.AutoBuild(parserResult)))
+                );
+
+            return parserResult;
         }
 
         private static IEnumerable<ErrorType> HandleUnknownArguments(bool ignoreUnknownArguments)
@@ -203,32 +206,14 @@ namespace CommandLine
                 : Enumerable.Empty<ErrorType>();
         }
 
-        private static ParserResult<T> DisplayHelp<T>(ParserResult<T> parserResult, TextWriter helpWriter)
-        {
-            if (parserResult.Tag == ParserResultType.NotParsed)
-            {
-                if (((NotParsed<T>)parserResult).Errors.Any())
-                {
-                    helpWriter.ToMaybe().Do(writer => writer.Write(HelpText.AutoBuild(parserResult)));
-                }
-            }
-
-            return parserResult;
-        }
-
         private void Dispose(bool disposing)
         {
-            if (disposed)
-            {
-                return;
-            }
+            if (disposed) return;
 
             if (disposing)
             {
                 if (settings != null)
-                {
                     settings.Dispose();
-                }
 
                 disposed = true;
             }
