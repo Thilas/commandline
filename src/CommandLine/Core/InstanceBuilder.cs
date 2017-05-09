@@ -4,9 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+#if PLATFORM_DOTNET
+using System.Reflection;
+#endif
 using CommandLine.Infrastructure;
 using CSharpx;
 using RailwaySharp.ErrorHandling;
+using System.Reflection;
 
 namespace CommandLine.Core
 {
@@ -17,6 +21,7 @@ namespace CommandLine.Core
             Func<IEnumerable<string>, IEnumerable<OptionSpecification>, Result<IEnumerable<Token>, Error>> tokenizer,
             IEnumerable<string> arguments,
             StringComparer nameComparer,
+            bool ignoreValueCase,
             CultureInfo parsingCulture,
             IEnumerable<ErrorType> nonFatalErrors)
         {
@@ -49,22 +54,25 @@ namespace CommandLine.Core
                 var partitions = TokenPartitioner.Partition(
                     tokens,
                     name => TypeLookup.FindTypeDescriptorAndSibling(name, optionSpecs, nameComparer));
+                var optionsPartition = partitions.Item1;
+                var valuesPartition = partitions.Item2;
+                var errorsPartition = partitions.Item3;
 
                 var optionSpecPropsResult =
                     OptionMapper.MapValues(
                         (from pt in specProps where pt.Specification.IsOption() select pt),
-                        partitions.Options,
-                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture),
+                        optionsPartition,
+                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture, ignoreValueCase),
                         nameComparer);
 
                 var valueSpecPropsResult =
                     ValueMapper.MapValues(
-                        (from pt in specProps where pt.Specification.IsValue() select pt),
-                        partitions.Values,
-                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture));
+                        (from pt in specProps where pt.Specification.IsValue() orderby ((ValueSpecification)pt.Specification).Index select pt),
+                        valuesPartition,
+                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture, ignoreValueCase));
 
-                var missingValueErrors = from token in partitions.Errors
-                    select
+                var missingValueErrors = from token in errorsPartition
+                                         select
                         new MissingValueOptionError(
                             optionSpecs.Single(o => token.Text.MatchName(o.ShortName, o.LongName, nameComparer))
                                 .FromOptionSpecification());
@@ -86,27 +94,25 @@ namespace CommandLine.Core
                                 sp =>
                                     sp.Value.IsNothing() && sp.Specification.TargetType == TargetType.Sequence
                                     && sp.Specification.DefaultValue.MatchNothing(),
-                                sp => sp.Property.PropertyType.GetGenericArguments().Single().CreateEmptyArray());
+                                sp => sp.Property.PropertyType.GetTypeInfo().GetGenericArguments().Single().CreateEmptyArray());
                     return mutable;
                 };
 
                 Func<T> buildImmutable = () =>
                 {
-                    var ctor = typeInfo.GetConstructor((from sp in specProps select sp.Property.PropertyType).ToArray());
+                    var ctor = typeInfo.GetTypeInfo().GetConstructor((from sp in specProps select sp.Property.PropertyType).ToArray());
                     var values = (from prms in ctor.GetParameters()
                         join sp in specPropsWithValue on prms.Name.ToLower() equals sp.Property.Name.ToLower()
                         select
-                            sp.Value.MapValueOrDefault(
-                                v => v,
-                                sp.Specification.DefaultValue.MapValueOrDefault(
-                                    d => d,
+                            sp.Value.GetValueOrDefault(
+                                sp.Specification.DefaultValue.GetValueOrDefault(
                                     sp.Specification.ConversionType.CreateDefaultForImmutable()))).ToArray();
                     var immutable = (T)ctor.Invoke(values);
                     return immutable;
                 };
 
                 var instance = typeInfo.IsMutable() ? buildMutable() : buildImmutable();
-
+                
                 var validationErrors = specPropsWithValue.Validate(SpecificationPropertyRules.Lookup(tokens));
 
                 var allErrors =

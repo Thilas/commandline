@@ -5,7 +5,9 @@ using System.Linq;
 using CommandLine.Tests.Fakes;
 using Xunit;
 using FluentAssertions;
+#if !SKIP_FSHARP
 using Microsoft.FSharp.Core;
+#endif
 
 namespace CommandLine.Tests.Unit
 {
@@ -38,6 +40,7 @@ namespace CommandLine.Tests.Unit
                 .ShouldBeEquivalentTo(result);
         }
 
+#if !SKIP_FSHARP
         [Theory]
         [MemberData("UnParseDataFSharpOption")]
         public static void UnParsing_instance_with_fsharp_option_returns_command_line(Options_With_FSharpOption options, string result)
@@ -46,6 +49,7 @@ namespace CommandLine.Tests.Unit
                 .FormatCommandLine(options)
                 .ShouldBeEquivalentTo(result);
         }
+#endif
 
         [Fact]
         public static void UnParsing_instance_with_group_switches_returns_command_line_with_switches_grouped()
@@ -63,6 +67,33 @@ namespace CommandLine.Tests.Unit
             new Parser()
                 .FormatCommandLine(options, config => config.UseEqualToken = true)
                 .ShouldBeEquivalentTo("-i 1 2 3 --stringvalue=nospaces -x 123456789");
+        }
+
+        [Fact]
+        public static void UnParsing_instance_with_dash_in_value_and_dashdash_enabled_returns_command_line_with_value_prefixed_with_dash_dash()
+        {
+            var options = new Simple_Options_With_Values { StringSequence = new List<string> { "-something", "with", "dash" } };
+            new Parser((setting) => setting.EnableDashDash = true)
+                .FormatCommandLine(options)
+                .ShouldBeEquivalentTo("-- -something with dash");
+        }
+
+        [Fact]
+        public static void UnParsing_instance_with_no_values_and_dashdash_enabled_returns_command_line_without_dash_dash()
+        {
+            var options = new Simple_Options_With_Values();
+            new Parser((setting) => setting.EnableDashDash = true)
+                .FormatCommandLine(options)
+                .ShouldBeEquivalentTo("");
+        }
+
+        [Fact]
+        public static void UnParsing_instance_with_dash_in_value_and_dashdash_disabled_returns_command_line_with_value()
+        {
+            var options = new Simple_Options_With_Values { StringSequence = new List<string> { "-something", "with", "dash" } };
+            new Parser()
+                .FormatCommandLine(options)
+                .ShouldBeEquivalentTo("-something with dash");
         }
 
         public static IEnumerable<object> UnParseData
@@ -110,6 +141,7 @@ namespace CommandLine.Tests.Unit
             }
         }
 
+#if !SKIP_FSHARP
         public static IEnumerable<object> UnParseDataFSharpOption
         {
             get
@@ -120,5 +152,6 @@ namespace CommandLine.Tests.Unit
                 yield return new object[] { new Options_With_FSharpOption { FileName = FSharpOption<string>.Some("myfile.bin"), Offset = FSharpOption<int>.Some(123456789) }, "--filename myfile.bin 123456789" };
             }
         }
+#endif
     }
 }

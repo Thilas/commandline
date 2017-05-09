@@ -4,8 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+#if !SKIP_FSHARP
 using Microsoft.FSharp.Core;
+#endif
 using CommandLine.Core;
+using CommandLine.Infrastructure;
+
 using CSharpx;
 using CommandLine.Tests.Fakes;
 using FluentAssertions;
@@ -23,6 +27,20 @@ namespace CommandLine.Tests.Unit.Core
                 (args, optionSpecs) => Tokenizer.ConfigureTokenizer(StringComparer.Ordinal, false, false)(args, optionSpecs),
                 arguments,
                 StringComparer.Ordinal,
+                false,
+                CultureInfo.InvariantCulture,
+                Enumerable.Empty<ErrorType>());
+        }
+
+        private static ParserResult<T> InvokeBuildEnumValuesCaseIgnore<T>(string[] arguments)
+            where T : new()
+        {
+            return InstanceBuilder.Build(
+                Maybe.Just<Func<T>>(() => new T()),
+                (args, optionSpecs) => Tokenizer.ConfigureTokenizer(StringComparer.Ordinal, false, false)(args, optionSpecs),
+                arguments,
+                StringComparer.Ordinal,
+                true,
                 CultureInfo.InvariantCulture,
                 Enumerable.Empty<ErrorType>());
         }
@@ -34,6 +52,7 @@ namespace CommandLine.Tests.Unit.Core
                 (args, optionSpecs) => Tokenizer.ConfigureTokenizer(StringComparer.Ordinal, false, false)(args, optionSpecs),
                 arguments,
                 StringComparer.Ordinal,
+                false,
                 CultureInfo.InvariantCulture,
                 Enumerable.Empty<ErrorType>());
         }
@@ -257,6 +276,27 @@ namespace CommandLine.Tests.Unit.Core
             // Teardown
         }
 
+        [Theory]
+        [InlineData(new[] { "--colors", "red" }, Colors.Red)]
+        [InlineData(new[] { "--colors", "green" }, Colors.Green)]
+        [InlineData(new[] { "--colors", "blue" }, Colors.Blue)]
+        [InlineData(new[] { "--colors", "0" }, Colors.Red)]
+        [InlineData(new[] { "--colors", "1" }, Colors.Green)]
+        [InlineData(new[] { "--colors", "2" }, Colors.Blue)]
+        public void Parse_enum_value_ignore_case(string[] arguments, Colors expected)
+        {
+            // Fixture setup in attribute
+
+            // Exercize system 
+            var result = InvokeBuildEnumValuesCaseIgnore<Simple_Options_With_Enum>(
+                arguments);
+
+            // Verify outcome
+            expected.ShouldBeEquivalentTo(((Parsed<Simple_Options_With_Enum>)result).Value.Colors);
+
+            // Teardown
+        }
+
         [Fact]
         public void Parse_enum_value_with_wrong_index_generates_BadFormatConversionError()
         {
@@ -409,6 +449,7 @@ namespace CommandLine.Tests.Unit.Core
                         args => Tokenizer.Tokenize(args, name => NameLookup.Contains(name, optionSpecs, StringComparer.Ordinal))),
                 arguments,
                 StringComparer.Ordinal,
+                false,
                 CultureInfo.InvariantCulture,
                 Enumerable.Empty<ErrorType>());
 
@@ -658,6 +699,7 @@ namespace CommandLine.Tests.Unit.Core
             // Teardown
         }
 
+#if !SKIP_FSHARP
         [Theory]
         [InlineData(new[] { "--filename", "log-20150626.txt" }, "log-20150626.txt", true)]
         [InlineData(new string[] { }, null, false)]
@@ -699,8 +741,9 @@ namespace CommandLine.Tests.Unit.Core
 
             // Teardown
         }
+#endif
 
-    
+
         [Fact]
         public void Min_constraint_set_to_zero_throws_exception()
         {
@@ -709,7 +752,7 @@ namespace CommandLine.Tests.Unit.Core
                 new string[] { });
 
             // Verify outcome
-            Assert.Throws<ApplicationException>(test);
+            Assert.Throws<InvalidOperationException>(test);
         }
 
         [Fact]
@@ -720,7 +763,7 @@ namespace CommandLine.Tests.Unit.Core
                 new string[] { });
 
             // Verify outcome
-            Assert.Throws<ApplicationException>(test);
+            Assert.Throws<InvalidOperationException>(test);
         }
 
         [Fact]
@@ -731,7 +774,7 @@ namespace CommandLine.Tests.Unit.Core
                 new string[] { });
 
             // Verify outcome
-            Assert.Throws<ApplicationException>(test);
+            Assert.Throws<InvalidOperationException>(test);
         }
 
         [Theory]
@@ -760,6 +803,42 @@ namespace CommandLine.Tests.Unit.Core
         [Theory]
         [InlineData(new[] { "--stringvalue", "abc", "--stringvalue", "def" }, 1)]
         public void Specifying_options_two_or_more_times_generates_RepeatedOptionError(string[] arguments, int expected)
+        {
+            // Exercize system 
+            var result = InvokeBuild<Simple_Options>(
+                arguments);
+
+            // Verify outcome
+            ((NotParsed<Simple_Options>)result).Errors.Should().HaveCount(x => x == expected);
+        }
+
+        [Theory]
+        [InlineData(new[] { "-s", "abc", "-s", "def" }, 1)]
+        public void Specifying_options_two_or_more_times_with_short_options_generates_RepeatedOptionError(string[] arguments, int expected)
+        {
+            // Exercize system 
+            var result = InvokeBuild<Simple_Options>(
+                arguments);
+
+            // Verify outcome
+            ((NotParsed<Simple_Options>)result).Errors.Should().HaveCount(x => x == expected);
+        }
+
+        [Theory]
+        [InlineData(new[] { "--shortandlong", "abc", "--shortandlong", "def" }, 1)]
+        public void Specifying_options_two_or_more_times_with_long_options_generates_RepeatedOptionError(string[] arguments, int expected)
+        {
+            // Exercize system 
+            var result = InvokeBuild<Simple_Options>(
+                arguments);
+
+            // Verify outcome
+            ((NotParsed<Simple_Options>)result).Errors.Should().HaveCount(x => x == expected);
+        }
+
+        [Theory]
+        [InlineData(new[] { "-s", "abc", "--shortandlong", "def" }, 1)]
+        public void Specifying_options_two_or_more_times_with_mixed_short_long_options_generates_RepeatedOptionError(string[] arguments, int expected)
         {
             // Exercize system 
             var result = InvokeBuild<Simple_Options>(
@@ -890,7 +969,7 @@ namespace CommandLine.Tests.Unit.Core
         }
 
         [Fact]
-        public static void Parse_to_type_with_single_string_ctor_builds_up_correct_instance()
+        public void Parse_to_type_with_single_string_ctor_builds_up_correct_instance()
         {
             // Fixture setup
             var expectedResult = new Options_With_Uri_And_SimpleType { EndPoint = new Uri("http://localhost/test/"), MyValue = new MySimpleType("custom-value") };
@@ -901,6 +980,45 @@ namespace CommandLine.Tests.Unit.Core
 
             // Verify outcome
             expectedResult.ShouldBeEquivalentTo(((Parsed<Options_With_Uri_And_SimpleType>)result).Value);
+
+            // Teardown
+        }
+
+        [Theory]
+        [InlineData(new[] { "--stringvalue", "x-" }, "x-")]
+        [InlineData(new[] { "--stringvalue", "x--" }, "x--")]
+        [InlineData(new[] { "--stringvalue", "x---" }, "x---")]
+        [InlineData(new[] { "--stringvalue=x-x" }, "x-x")]
+        [InlineData(new[] { "--stringvalue=x--x" }, "x--x")]
+        [InlineData(new[] { "--stringvalue=x---x" }, "x---x")]
+        [InlineData(new[] { "--stringvalue", "5366ebc4-7aa7-4d5a-909c-a415a291a5ad" }, "5366ebc4-7aa7-4d5a-909c-a415a291a5ad")]
+        [InlineData(new[] { "--stringvalue=5366ebc4-7aa7-4d5a-909c-a415a291a5ad" }, "5366ebc4-7aa7-4d5a-909c-a415a291a5ad")]
+        public void Parse_string_with_dashes_except_in_beginning(string[] arguments, string expected)
+        {
+            // Fixture setup in attributes
+
+            // Exercize system 
+            var result = InvokeBuild<Simple_Options>(
+                arguments);
+
+            // Verify outcome
+            expected.ShouldBeEquivalentTo(((Parsed<Simple_Options>)result).Value.StringValue);
+
+            // Teardown
+        }
+
+        [Theory]
+        [MemberData("GuidData")]
+        public void Parse_Guid(string[] arguments, Options_With_Guid expected)
+        {
+            // Fixture setup in attributes
+
+            // Exercize system 
+            var result = InvokeBuild<Options_With_Guid>(
+                arguments);
+
+            // Verify outcome
+            expected.ShouldBeEquivalentTo(((Parsed<Options_With_Guid>)result).Value);
 
             // Teardown
         }
@@ -940,6 +1058,19 @@ namespace CommandLine.Tests.Unit.Core
                 yield return new object[] { new[] { "-x" }, new Immutable_Simple_Options("", new int[] { }, true, default(long)) };
                 yield return new object[] { new[] { "9876543210" }, new Immutable_Simple_Options("", new int[] { }, default(bool), 9876543210L) };
                 yield return new object[] { new[] { "--stringvalue=strval0", "-i", "9", "7", "8", "-x", "9876543210" }, new Immutable_Simple_Options("strval0", new[] { 9, 7, 8 }, true, 9876543210L) };
+            }
+        }
+
+        public static IEnumerable<object> GuidData
+        {
+            get
+            {
+                var guid0 = Guid.NewGuid();
+                var guid1 = Guid.NewGuid();
+                yield return new object[] { new[] { "--txid", guid0.ToStringInvariant() }, new Options_With_Guid { TransactionId = guid0 } };
+                yield return new object[] { new[] { "--txid=" + guid1.ToStringInvariant() }, new Options_With_Guid { TransactionId = guid1 } };
+                yield return new object[] { new[] { "-t", guid0.ToStringInvariant() }, new Options_With_Guid { TransactionId = guid0 } };
+                yield return new object[] { new[] { "-t" + guid1.ToStringInvariant() }, new Options_With_Guid { TransactionId = guid1 } };
             }
         }
     }

@@ -4,11 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using CommandLine.Core;
+using CommandLine.Infrastructure;
 using CommandLine.Tests.Fakes;
+using CommandLine.Tests.Unit.Infrastructure;
 using CommandLine.Text;
 using FluentAssertions;
 using Xunit;
+using System.Text;
 
 namespace CommandLine.Tests.Unit.Text
 {
@@ -58,13 +62,14 @@ namespace CommandLine.Tests.Unit.Text
 
             var lines = sut.ToString().ToNotEmptyLines().TrimStringArray();
             lines[0].ShouldBeEquivalentTo("pre-options");
-            lines[1].ShouldBeEquivalentTo("--stringvalue    Define a string value here.");
-            lines[2].ShouldBeEquivalentTo("-i               Define a int sequence here.");
-            lines[3].ShouldBeEquivalentTo("-x               Define a boolean or switch value here.");
-            lines[4].ShouldBeEquivalentTo("--help           Display this help screen.");
-            lines[5].ShouldBeEquivalentTo("--version        Display version information.");
-            lines[6].ShouldBeEquivalentTo("value pos. 0     Define a long value here.");
-            lines[7].ShouldBeEquivalentTo("post-options");
+            lines[1].ShouldBeEquivalentTo("--stringvalue         Define a string value here.");
+            lines[2].ShouldBeEquivalentTo("-s, --shortandlong    Example with both short and long name.");
+            lines[3].ShouldBeEquivalentTo("-i                    Define a int sequence here.");
+            lines[4].ShouldBeEquivalentTo("-x                    Define a boolean or switch value here.");
+            lines[5].ShouldBeEquivalentTo("--help                Display this help screen.");
+            lines[6].ShouldBeEquivalentTo("--version             Display version information.");
+            lines[7].ShouldBeEquivalentTo("value pos. 0          Define a long value here.");
+            lines[8].ShouldBeEquivalentTo("post-options");
             // Teardown
         }
 
@@ -130,7 +135,7 @@ namespace CommandLine.Tests.Unit.Text
         }
 
         [Fact]
-        public void When_help_text_is_longer_than_width_it_will_wrap_around_as_if_in_a_column()
+        public void When_help_text_is_longer_than_width_it_will_wrap_around_as_if_in_a_column_given_width_of_40()
         {
             // Fixture setup
             // Exercize system 
@@ -149,6 +154,46 @@ namespace CommandLine.Tests.Unit.Text
             lines[4].ShouldBeEquivalentTo("                test out the wrapping ");
             lines[5].ShouldBeEquivalentTo("                capabilities of the ");
             lines[6].ShouldBeEquivalentTo("                Help Text.");
+            // Teardown
+        }
+        
+
+
+        [Fact]
+        public void When_help_text_is_longer_than_width_it_will_wrap_around_as_if_in_a_column_given_width_of_100()
+        {
+            // Fixture setup
+            // Exercize system 
+            var sut = new HelpText(new HeadingInfo("CommandLine.Tests.dll", "1.9.4.131")) { MaximumDisplayWidth = 100} ;
+            sut.AddOptions(
+                new NotParsed<Simple_Options_With_HelpText_Set_To_Long_Description>(
+                    TypeInfo.Create(typeof(Simple_Options_With_HelpText_Set_To_Long_Description)),
+                    Enumerable.Empty<Error>()));
+
+            // Verify outcome
+            var lines = sut.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            lines[2].ShouldBeEquivalentTo("  v, verbose    This is the description of the verbosity to test out the wrapping capabilities of "); //"The first line should have the arguments and the start of the Help Text.");
+            //string formattingMessage = "Beyond the second line should be formatted as though it's in a column.";
+            lines[3].ShouldBeEquivalentTo("                the Help Text.");
+            // Teardown
+        }
+
+        [Fact]
+        public void When_help_text_has_hidden_option_it_should_not_be_added_to_help_text_output()
+        {
+            // Fixture setup
+            // Exercize system 
+            var sut = new HelpText(new HeadingInfo("CommandLine.Tests.dll", "1.9.4.131"));
+            sut.AddOptions(
+                new NotParsed<Simple_Options_With_HelpText_Set_To_Long_Description>(
+                    TypeInfo.Create(typeof(Simple_Options_With_HelpText_Set_To_Long_Description)),
+                    Enumerable.Empty<Error>()));
+
+            // Verify outcome
+            var lines = sut.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            lines[2].ShouldBeEquivalentTo("  v, verbose    This is the description of the verbosity to test out the "); //"The first line should have the arguments and the start of the Help Text.");
+            //string formattingMessage = "Beyond the second line should be formatted as though it's in a column.";
+            lines[3].ShouldBeEquivalentTo("                wrapping capabilities of the Help Text.");
             // Teardown
         }
 
@@ -274,15 +319,22 @@ namespace CommandLine.Tests.Unit.Text
 
             // Verify outcome
             var lines = helpText.ToString().ToNotEmptyLines().TrimStringArray();
+#if !PLATFORM_DOTNET
             lines[0].Should().StartWithEquivalent("CommandLine");
             lines[1].Should().StartWithEquivalent("Copyright (c)");
+#else
+            // Takes the name of the xUnit test program
+            lines[0].Should().StartWithEquivalent("xUnit");
+            lines[1].Should().StartWithEquivalent("Copyright (C) Outercurve Foundation");
+#endif
             lines[2].ShouldBeEquivalentTo("ERROR(S):");
             lines[3].ShouldBeEquivalentTo("Token 'badtoken' is not recognized.");
             lines[4].ShouldBeEquivalentTo("A sequence option 'i' is defined with fewer or more items than required.");
-            lines[5].ShouldBeEquivalentTo("--stringvalue    Define a string value here.");
-            lines[6].ShouldBeEquivalentTo("-i               Define a int sequence here.");
-            lines[7].ShouldBeEquivalentTo("-x               Define a boolean or switch value here.");
-            lines[8].ShouldBeEquivalentTo("--help           Display this help screen.");
+            lines[5].ShouldBeEquivalentTo("--stringvalue         Define a string value here.");
+            lines[6].ShouldBeEquivalentTo("-s, --shortandlong    Example with both short and long name.");
+            lines[7].ShouldBeEquivalentTo("-i                    Define a int sequence here.");
+            lines[8].ShouldBeEquivalentTo("-x                    Define a boolean or switch value here.");
+            lines[9].ShouldBeEquivalentTo("--help                Display this help screen.");
             // Teardown
         }
 
@@ -303,13 +355,51 @@ namespace CommandLine.Tests.Unit.Text
             // Verify outcome
             var lines = helpText.ToString().ToNotEmptyLines().TrimStringArray();
 
+#if !PLATFORM_DOTNET
             lines[0].Should().StartWithEquivalent("CommandLine");
             lines[1].Should().StartWithEquivalent("Copyright (c)");
+#else
+            // Takes the name of the xUnit test program
+            lines[0].Should().StartWithEquivalent("xUnit");
+            lines[1].Should().StartWithEquivalent("Copyright (C) Outercurve Foundation");
+#endif
             lines[2].ShouldBeEquivalentTo("-p, --patch      Use the interactive patch selection interface to chose which");
             lines[3].ShouldBeEquivalentTo("changes to commit.");
             lines[4].ShouldBeEquivalentTo("--amend          Used to amend the tip of the current branch.");
             lines[5].ShouldBeEquivalentTo("-m, --message    Use the given message as the commit message.");
             lines[6].ShouldBeEquivalentTo("--help           Display this help screen.");
+            // Teardown
+        }
+
+        [Fact]
+        public void Invoke_AutoBuild_for_Verbs_with_specific_verb_returns_appropriate_formatted_text_given_display_width_100()
+        {
+            // Fixture setup
+            var fakeResult = new NotParsed<object>(
+                TypeInfo.Create(typeof(NullInstance)),
+                new Error[]
+                    {
+                        new HelpVerbRequestedError("commit", typeof(Commit_Verb), true)
+                    });
+
+            // Exercize system
+            var helpText = HelpText.AutoBuild(fakeResult, maxDisplayWidth: 100);            
+
+            // Verify outcome
+            var lines = helpText.ToString().ToNotEmptyLines().TrimStringArray();
+
+#if !PLATFORM_DOTNET
+            lines[0].Should().StartWithEquivalent("CommandLine");
+            lines[1].ShouldBeEquivalentTo("Copyright (c) 2005 - 2015 Giacomo Stelluti Scala");
+#else
+            // Takes the name of the xUnit test program
+            lines[0].Should().StartWithEquivalent("xUnit");
+            lines[1].Should().StartWithEquivalent("Copyright (C) Outercurve Foundation");
+#endif
+            lines[2].ShouldBeEquivalentTo("-p, --patch      Use the interactive patch selection interface to chose which changes to commit.");
+            lines[3].ShouldBeEquivalentTo("--amend          Used to amend the tip of the current branch.");
+            lines[4].ShouldBeEquivalentTo("-m, --message    Use the given message as the commit message.");
+            lines[5].ShouldBeEquivalentTo("--help           Display this help screen.");
             // Teardown
         }
 
@@ -330,8 +420,14 @@ namespace CommandLine.Tests.Unit.Text
             // Verify outcome
             var lines = helpText.ToString().ToNotEmptyLines().TrimStringArray();
 
+#if !PLATFORM_DOTNET
             lines[0].Should().StartWithEquivalent("CommandLine");
             lines[1].Should().StartWithEquivalent("Copyright (c)");
+#else
+            // Takes the name of the xUnit test program
+            lines[0].Should().StartWithEquivalent("xUnit");
+            lines[1].Should().StartWithEquivalent("Copyright (C) Outercurve Foundation");
+#endif
             lines[2].ShouldBeEquivalentTo("add        Add file contents to the index.");
             lines[3].ShouldBeEquivalentTo("commit     Record changes to the repository.");
             lines[4].ShouldBeEquivalentTo("clone      Clone a repository into a new directory.");
@@ -387,6 +483,10 @@ namespace CommandLine.Tests.Unit.Text
             lines[4].ShouldBeEquivalentTo("Logging errors:");
             lines[5].ShouldBeEquivalentTo("  mono testapp.exe -e --input file.bin");
             lines[6].ShouldBeEquivalentTo("  mono testapp.exe --errs --input=file.bin");
+            lines[7].ShouldBeEquivalentTo("List:");
+            lines[8].ShouldBeEquivalentTo("  mono testapp.exe -l 1,2");
+            lines[9].ShouldBeEquivalentTo("Value:");
+            lines[10].ShouldBeEquivalentTo("  mono testapp.exe value");
         }
 
         [Fact]
@@ -404,10 +504,16 @@ namespace CommandLine.Tests.Unit.Text
             var helpText = HelpText.AutoBuild(fakeResult);
 
             // Verify outcome
-            var text = helpText.ToString();
+            var text = helpText.ToString();            
             var lines = text.ToNotEmptyLines().TrimStringArray();
+#if !PLATFORM_DOTNET
             lines[0].Should().StartWithEquivalent("CommandLine");
             lines[1].Should().StartWithEquivalent("Copyright (c)");
+#else
+            // Takes the name of the xUnit test program
+            lines[0].Should().StartWithEquivalent("xUnit");
+            lines[1].Should().StartWithEquivalent("Copyright (C) Outercurve Foundation");
+#endif
             lines[2].ShouldBeEquivalentTo("ERROR(S):");
             lines[3].ShouldBeEquivalentTo("Token 'badtoken' is not recognized.");
             lines[4].ShouldBeEquivalentTo("USAGE:");
@@ -418,17 +524,24 @@ namespace CommandLine.Tests.Unit.Text
             lines[9].ShouldBeEquivalentTo("Logging errors:");
             lines[10].ShouldBeEquivalentTo("mono testapp.exe -e --input file.bin");
             lines[11].ShouldBeEquivalentTo("mono testapp.exe --errs --input=file.bin");
-            lines[12].ShouldBeEquivalentTo("-i, --input     Set input file.");
-            lines[13].ShouldBeEquivalentTo("-i, --output    Set output file.");
-            lines[14].ShouldBeEquivalentTo("--verbose       Set verbosity level.");
-            lines[15].ShouldBeEquivalentTo("-w, --warns     Log warnings.");
-            lines[16].ShouldBeEquivalentTo("-e, --errs      Log errors.");
-            lines[17].ShouldBeEquivalentTo("--help          Display this help screen.");
-            lines[18].ShouldBeEquivalentTo("--version       Display version information.");
+            lines[12].ShouldBeEquivalentTo("List:");
+            lines[13].ShouldBeEquivalentTo("mono testapp.exe -l 1,2");
+            lines[14].ShouldBeEquivalentTo("Value:");
+            lines[15].ShouldBeEquivalentTo("mono testapp.exe value");
+            lines[16].ShouldBeEquivalentTo("-i, --input     Set input file.");
+            lines[17].ShouldBeEquivalentTo("-i, --output    Set output file.");
+            lines[18].ShouldBeEquivalentTo("--verbose       Set verbosity level.");
+            lines[19].ShouldBeEquivalentTo("-w, --warns     Log warnings.");
+            lines[20].ShouldBeEquivalentTo("-e, --errs      Log errors.");
+            lines[21].ShouldBeEquivalentTo("-l              List.");
+            lines[22].ShouldBeEquivalentTo("--help          Display this help screen.");
+            lines[23].ShouldBeEquivalentTo("--version       Display version information.");
+            lines[24].ShouldBeEquivalentTo("value pos. 0    Value.");
 
             // Teardown
         }
 
+#if !PLATFORM_DOTNET
         [Fact]
         public void Default_set_to_sequence_should_be_properly_printed()
         {
@@ -453,6 +566,108 @@ namespace CommandLine.Tests.Unit.Text
             lines[6].Should().Be("-q, --dblseq    (Default: 1.1 2.2 3.3)");
 
             // Teardown
+        }
+#endif
+
+        [Fact]
+        public void AutoBuild_when_no_assembly_attributes()
+        {
+            try
+            {
+                string expectedCopyright = "Copyright (C) 1 author";
+
+                ReflectionHelper.SetAttributeOverride(new Attribute[0]);
+
+                ParserResult<Simple_Options> fakeResult = new NotParsed<Simple_Options>(
+                    TypeInfo.Create(typeof (Simple_Options)), new Error[0]);
+                bool onErrorCalled = false;
+                HelpText actualResult = HelpText.AutoBuild(fakeResult, ht => 
+                {
+                    onErrorCalled = true;
+                    return ht;
+                }, ex => ex);
+                
+                onErrorCalled.Should().BeTrue();
+                actualResult.Copyright.Should().Be(expectedCopyright);
+            }
+            finally
+            {
+                ReflectionHelper.SetAttributeOverride(null);
+            }
+        }
+
+        [Fact]
+        public void AutoBuild_with_assembly_title_and_version_attributes_only()
+        {
+            try
+            {
+                string expectedTitle = "Title";
+                string expectedVersion = "1.2.3.4";
+
+                ReflectionHelper.SetAttributeOverride(new Attribute[]
+                {
+                    new AssemblyTitleAttribute(expectedTitle),
+                    new AssemblyInformationalVersionAttribute(expectedVersion)
+                });
+
+                ParserResult<Simple_Options> fakeResult = new NotParsed<Simple_Options>(
+                    TypeInfo.Create(typeof (Simple_Options)), new Error[0]);
+                bool onErrorCalled = false;
+                HelpText actualResult = HelpText.AutoBuild(fakeResult, ht =>
+                {
+                    onErrorCalled = true;
+                    return ht;
+                }, ex => ex);
+
+                onErrorCalled.Should().BeTrue();
+                actualResult.Heading.Should().Be(string.Format("{0} {1}", expectedTitle, expectedVersion));
+            }
+            finally
+            {
+                ReflectionHelper.SetAttributeOverride(null);
+            }
+        }
+
+
+        [Fact]
+        public void AutoBuild_with_assembly_company_attribute_only()
+        {
+            try
+            {
+                string expectedCompany = "Company";
+
+                ReflectionHelper.SetAttributeOverride(new Attribute[]
+                {
+                    new AssemblyCompanyAttribute(expectedCompany)
+                });
+
+                ParserResult<Simple_Options> fakeResult = new NotParsed<Simple_Options>(
+                    TypeInfo.Create(typeof (Simple_Options)), new Error[0]);
+                bool onErrorCalled = false;
+                HelpText actualResult = HelpText.AutoBuild(fakeResult, ht =>
+                {
+                    onErrorCalled = true;
+                    return ht;
+                }, ex => ex);
+
+                onErrorCalled.Should().BeFalse(); // Other attributes have fallback logic
+                actualResult.Copyright.Should().Be(string.Format("Copyright (C) {0} {1}", DateTime.Now.Year, expectedCompany));
+            }
+            finally
+            {
+                ReflectionHelper.SetAttributeOverride(null);
+            }
+        }
+
+        [Fact]
+        public void Add_line_with_two_empty_spaces_at_the_end()
+        {
+            StringBuilder b = new StringBuilder();
+            HelpText.AddLine(b,
+                "Test  ",
+                1);
+
+            Assert.Equal("T" + Environment.NewLine + "e" + Environment.NewLine + "s" + Environment.NewLine + "t", b.ToString());
         }
     }
 }

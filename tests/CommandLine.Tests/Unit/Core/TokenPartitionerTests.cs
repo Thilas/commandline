@@ -28,11 +28,12 @@ namespace CommandLine.Tests.Unit.Core
             // Exercize system 
             var result = TokenPartitioner.Partition(
                 new[] { Token.Name("i"), Token.Value("10"), Token.Value("20"), Token.Value("30"), Token.Value("40") },
-                name => TypeLookup.FindTypeDescriptorAndSibling(name, specs, StringComparer.InvariantCulture)
+                name => TypeLookup.FindTypeDescriptorAndSibling(name, specs, StringComparer.Ordinal)
                 );
 
             // Verify outcome
-            Assert.True(expectedSequence.All(a => result.Options.Any(r => a.Key.Equals(r.Key) && a.Value.SequenceEqual(r.Value))));
+            var options = result.Item1;
+            Assert.True(expectedSequence.All(a => options.Any(r => a.Key.Equals(r.Key) && a.Value.SequenceEqual(r.Value))));
 
             // Teardown
         }
@@ -54,11 +55,12 @@ namespace CommandLine.Tests.Unit.Core
             // Exercize system 
             var result = TokenPartitioner.Partition(
                 new[] { Token.Name("i"), Token.Value("10"), Token.Value("10"), Token.Value("30"), Token.Value("40") },
-                name => TypeLookup.FindTypeDescriptorAndSibling(name, specs, StringComparer.InvariantCulture)
+                name => TypeLookup.FindTypeDescriptorAndSibling(name, specs, StringComparer.Ordinal)
                 );
 
             // Verify outcome
-            Assert.True(expectedSequence.All(a => result.Options.Any(r => a.Key.Equals(r.Key) && a.Value.SequenceEqual(r.Value))));
+            var options = result.Item1;
+            Assert.True(expectedSequence.All(a => options.Any(r => a.Key.Equals(r.Key) && a.Value.SequenceEqual(r.Value))));
 
             // Teardown
         }

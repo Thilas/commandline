@@ -2,9 +2,13 @@
 [![Nuget](https://img.shields.io/nuget/dt/commandlineparser.svg)](http://nuget.org/packages/commandlineparser)
 [![Nuget](https://img.shields.io/nuget/v/commandlineparser.svg)](http://nuget.org/packages/commandlineparser)
 [![Nuget](https://img.shields.io/nuget/vpre/commandlineparser.svg)](http://nuget.org/packages/commandlineparser)
+[![Join the gitter chat!](https://badges.gitter.im/gsscoder/commandline.svg)](https://gitter.im/gsscoder/commandline?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Command Line Parser Library 2.0.251.0 beta for CLR.
+Command Line Parser Library 2.0.275.0 beta for CLR.
 ===
+
+**Note:** the API surface has changed since 1.9.x and earlier. If you are looking for documentation on 1.9.x, please see [this branch](https://github.com/gsscoder/commandline/tree/stable-1.9.71.2)
+
 The Command Line Parser Library offers CLR applications a clean and concise API for manipulating command line arguments and related tasks, such as defining switches, options and verb commands. It allows you to display a help screen with a high degree of customization and a simple way to report syntax errors to the end user.
 
 Everything that is boring and repetitive about parsing command line arguments is delegated to the library, letting developers concentrate on core logic. It's written in **C#** and doesn't depend on other packages.
@@ -15,6 +19,7 @@ Compatibility:
 ---
   - .NET Framework 4.0+
   - Mono 2.1+ Profile
+  - .Net Core
 
 Current Release:
 ---
@@ -22,23 +27,23 @@ Current Release:
 
 At glance:
 ---
-  - One line parsing using default singleton: ``CommandLine.Parser.Default.ParseArguments(...)``.
-  - Automatic or one line help screen generator: ``HelpText.AutoBuild(...)``.
+  - One line parsing using default singleton: `CommandLine.Parser.Default.ParseArguments(...)`.
+  - Automatic or one line help screen generator: `HelpText.AutoBuild(...)`.
     - Supports `--help`, `--version`, `version` and `help [verb]` by default.
-  - Map to sequences (``IEnumerable<T>``) or scalar types, including enum and ``Nullable<T>``.
-  - You can also map to every type with a constructor that accepts a string (like ``System.Uri``).
+  - Map to sequences (`IEnumerable<T>`) or scalar types, including enum and `Nullable<T>`.
+  - You can also map to every type with a constructor that accepts a string (like `System.Uri`).
   - __Plug-In friendly__ architecture as explained [here](https://github.com/gsscoder/commandline/wiki/Plug-in-Friendly-Architecture).
-  - Define [verb commands](https://github.com/gsscoder/commandline/wiki/Latest-Version#verbs) as ``git commit -a``.
-  - Unparsing support: ``CommandLine.Parser.Default.FormatCommandLine<T>(T options)``.
-  - F#-friendly with support for ``option<'a>``, see [demo](https://github.com/gsscoder/commandline/blob/master/demo/fsharp-demo.fsx).
+  - Define [verb commands](https://github.com/gsscoder/commandline/wiki/Latest-Version#verbs) as `git commit -a`.
+  - Unparsing support: `CommandLine.Parser.Default.FormatCommandLine<T>(T options)`.
+  - F#-friendly with support for `option<'a>`, see [demo](https://github.com/gsscoder/commandline/blob/master/demo/fsharp-demo.fsx).
   - Most of features applies with a [CoC](http://en.wikipedia.org/wiki/Convention_over_configuration) philosophy.
   - C# demo: source [here](https://github.com/gsscoder/commandline/tree/master/demo/ReadText.Demo).
 
 To install:
 ---
-  - NuGet way (latest stable): ``Install-Package CommandLineParser``
-  - NuGet way (latest version): ``Install-Package CommandLineParser -pre``
-  - XCOPY way: ``cp -r ClonedRepo/src/CommandLine To/Your/Project/Dir``
+  - NuGet way (latest stable): `Install-Package CommandLineParser`
+  - NuGet way (latest version): `Install-Package CommandLineParser -pre`
+  - XCOPY way: `cp -r ClonedRepo/src/CommandLine To/Your/Project/Dir`
 
 To build:
 ---
@@ -60,7 +65,7 @@ Used by:
 
 Notes:
 ---
-The project is well suited to be included in your application. If you don't merge it to your project tree, you must reference ``CommandLine.dll`` and import ``CommandLine`` and ``CommandLine.Text`` namespaces (or install via NuGet). The help text builder and support types are in the ``CommandLine.Text`` namespace that is loosely coupled with the parser. It is good to know that the ``HelpText`` class will avoid a lot of repetitive coding.
+The project is well suited to be included in your application. If you don't merge it to your project tree, you must reference `CommandLine.dll` and import `CommandLine` and `CommandLine.Text` namespaces (or install via NuGet). The help text builder and support types are in the `CommandLine.Text` namespace that is loosely coupled with the parser. It is good to know that the `HelpText` class will avoid a lot of repetitive coding.
 
 **C#:**
 
@@ -82,24 +87,14 @@ class Options {
 
   [Value(0, MetaName = "offset",
     HelpText = "File offset.")]
-  public long? Offset { get; set;}
-  }
+  public long? Offset { get; set; }
 }
 ```
 Consume them:
 ```csharp
 static int Main(string[] args) {
-  var result = CommandLine.Parser.Default.ParseArguments<Options>(args);
-  var exitCode = result
-    .MapResult(
-      options = > {
-        if (options.Verbose) Console.WriteLine("Filenames: {0}", string.Join(",", options.InputFiles.ToArray()));
-        return 0; },
-      errors => {
-	    LogHelper.Log(errors);
-	    return 1; });
-  return exitCode;
-}
+  var options = new Options();
+  var isValid = CommandLine.Parser.Default.ParseArgumentsStrict(args, options);
 ```
 **F#:**
 ```fsharp
@@ -112,12 +107,38 @@ type options = {
 ```
 Consume them:
 ```fsharp
-let main argv = 
+let main argv =
   let result = CommandLine.Parser.Default.ParseArguments<options>(argv)
   match result with
   | :? Parsed<options> as parsed -> run parsed.Value
   | :? NotParsed<options> as notParsed -> fail notParsed.Errors
 ```
+**VB.NET:**
+```VB.NET
+Class Options
+	<CommandLine.Option('r', "read", Required := true,
+	HelpText:="Input files to be processed.")>
+	Public Property InputFiles As IEnumerable(Of String)
+
+    ' Omitting long name, default --verbose
+    <CommandLine.Option(
+	HelpText:="Prints all messages to standard output.")>
+	Public Property Verbose As Boolean
+
+	<CommandLine.Option(Default:="中文",
+	HelpText:="Content language.")>
+	Public Property Language As String
+
+	<CommandLine.Value(0, MetaName:="offset",
+	HelpText:="File offset.")>
+	Public Property Offset As Long?
+End Class
+```
+Consume them:
+```VB.NET
+TODO
+```
+
 
 For verbs:
 
@@ -144,6 +165,54 @@ int Main(string[] args) {
       (CloneOptions opts) => RunCloneAndReturnExitCode(opts),
       errs => 1);
 }
+```
+
+**F#:**
+```fsharp
+open CommandLine
+
+[<Verb("add", HelpText = "Add file contents to the index.")>]
+type AddOptions = {
+  // normal options here
+}
+[<Verb("commit", HelpText = "Record changes to the repository.")>]
+type CommitOptions = {
+  // normal options here
+}
+[<Verb("clone", HelpText = "Clone a repository into a new directory.")>]
+type CloneOptions = {
+  // normal options here
+}
+
+[<EntryPoint>]
+let main args =
+  let result = Parser.Default.ParseArguments<AddOptions, CommitOptions, CloneOptions> args
+  match result with
+  | :? CommandLine.Parsed<obj> as command ->
+    match command.Value with
+    | :? AddOptions as opts -> RunAddAndReturnExitCode opts
+    | :? CommitOptions as opts -> RunCommitAndReturnExitCode opts
+    | :? CloneOptions as opts -> RunCloneAndReturnExitCode opts
+  | :? CommandLine.NotParsed<obj> -> 1
+```
+**VB.NET:**
+```VB.NET
+<CommandLine.Verb("add", HelpText:="Add file contents to the index.")>
+Public Class AddOptions
+	'Normal options here
+End Class
+<CommandLine.Verb("commit", HelpText:="Record changes to the repository.")>
+Public Class AddOptions
+	'Normal options here
+End Class
+<CommandLine.Verb("clone", HelpText:="Clone a repository into a new directory.")>
+Public Class AddOptions
+	'Normal options here
+End Class
+
+Public Shared Sub Main()
+	'TODO
+End Sub
 ```
 
 Acknowledgements:
@@ -249,15 +318,23 @@ Latest Changes:
   - Renaming tests fakes.
   - Issue #220 Implemented.
   - Replacing Either<L,R> with Result<TSucc, TMsg>.
-  - Internal refactoring.
   - Centralizing `Tokenizer` configuration.
   - Issue #225 (reported by @rmunn) Fixed.
   - Issue #225/b (reported by @rmunn) Fixed.
   - All `ParserResult<T>.Return` renamed to `MapResult`.
+  - PR #227 (by @Thilas) Merged.
+  - Reverted back to `Tuple<...>` instead of `TokePartitions` type.
+  - PR #227 (by @cfeilen) Merged.
+  - PR #231 (by @kshanafelt) Merged.
+  - Updated RailwaySharp source reference.
+  - Internal refactoring.
+  - Added properties test project using FsCheck.
+  - Issue #241 (reported by @pvmraghunandan) Fixed.
+  - PR #255 fixes Issue #254 by @scadorel Merged.
 
 Contact:
 ---
 Giacomo Stelluti Scala
-  - gsscoder AT gmail DOT com
+  - gsscoder AT gmail DOT com (_use this for everything that is not available via GitHub features_)
   - [Blog](http://gsscoder.blogspot.it)
   - [Twitter](http://twitter.com/gsscoder)

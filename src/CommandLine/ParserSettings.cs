@@ -13,12 +13,16 @@ namespace CommandLine
     /// </summary>
     public class ParserSettings : IDisposable
     {
+        private const int DefaultMaximumLength = 80; // default console width
+
         private bool disposed;
         private bool caseSensitive;
+        private bool caseInsensitiveEnumValues;
         private TextWriter helpWriter;
         private bool ignoreUnknownArguments;
         private CultureInfo parsingCulture;
         private bool enableDashDash;
+        private int maximumDisplayWidth;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ParserSettings"/> class.
@@ -26,7 +30,16 @@ namespace CommandLine
         public ParserSettings()
         {
             caseSensitive = true;
+            caseInsensitiveEnumValues = false;
             parsingCulture = CultureInfo.InvariantCulture;
+            try
+            {
+                maximumDisplayWidth = Console.WindowWidth;
+            }
+            catch (IOException)
+            {
+                maximumDisplayWidth = DefaultMaximumLength;
+            }
         }
 
         /// <summary>
@@ -46,6 +59,16 @@ namespace CommandLine
         {
             get { return caseSensitive; }
             set { PopsicleSetter.Set(Consumed, ref caseSensitive, value); }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether perform case sensitive comparisons of <i>values</i>.
+        /// Note that case insensitivity only applies to <i>values</i>, not the parameters.
+        /// </summary>
+        public bool CaseInsensitiveEnumValues
+        {
+            get { return caseInsensitiveEnumValues; }
+            set { PopsicleSetter.Set(Consumed, ref caseInsensitiveEnumValues, value); }
         }
 
         /// <summary>
@@ -69,6 +92,9 @@ namespace CommandLine
         /// Gets or sets the <see cref="System.IO.TextWriter"/> used for help method output.
         /// Setting this property to null, will disable help screen.
         /// </summary>
+        /// <remarks>
+        /// It is the caller's responsibility to dispose or close the <see cref="TextWriter"/>.
+        /// </remarks>
         public TextWriter HelpWriter
         {
             get { return helpWriter; }
@@ -102,6 +128,15 @@ namespace CommandLine
             set { PopsicleSetter.Set(Consumed, ref enableDashDash, value); }
         }
 
+        /// <summary>
+        /// Gets or sets the maximum width of the display.  This determines word wrap when displaying the text.
+        /// </summary>
+        public int MaximumDisplayWidth
+        {
+            get { return maximumDisplayWidth; }
+            set { maximumDisplayWidth = value; }
+        }
+
         internal StringComparer NameComparer
         {
             get
@@ -133,11 +168,7 @@ namespace CommandLine
 
             if (disposing)
             {
-                if (HelpWriter != null)
-                {
-                    helpWriter.Dispose();
-                    helpWriter = null;
-                }
+                // Do not dispose HelpWriter. It is the caller's responsibility.
 
                 disposed = true;
             }

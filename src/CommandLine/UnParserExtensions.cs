@@ -142,17 +142,15 @@ namespace CommandLine
                 ? builder.Append('-').Append(string.Join(string.Empty, shortSwitches.Select(
                     info => ((OptionSpecification)info.Specification).ShortName).ToArray())).Append(' ')
                 : builder;
-            builder
-                .TrimEndIfMatchWhen(!optSpecs.Any() || builder.TrailingSpaces() > 1, ' ');
             optSpecs.ForEach(
                 opt =>
                     builder
-                        .TrimEndIfMatchWhen(builder.TrailingSpaces() > 1, ' ')
                         .Append(FormatOption((OptionSpecification)opt.Specification, opt.Value, settings))
                         .Append(' ')
                 );
-            builder
-                .TrimEndIfMatchWhen(!valSpecs.Any() || builder.TrailingSpaces() > 1, ' ');
+
+            builder.AppendWhen(valSpecs.Any() && parser.Settings.EnableDashDash, "-- ");
+
             valSpecs.ForEach(
                 val => builder.Append(FormatValue(val.Specification, val.Value)).Append(' '));
 
@@ -175,7 +173,7 @@ namespace CommandLine
                     var e = ((IEnumerable)value).GetEnumerator();
                     while (e.MoveNext())
                         builder.Append(format(e.Current)).Append(sep);
-                    builder.TrimEndIfMatch(' ');
+                    builder.TrimEndIfMatch(sep);
                     break;
             }
             return builder.ToString();
@@ -216,25 +214,29 @@ namespace CommandLine
                 new StringBuilder(longName
                     ? "--".JoinTo(optionSpec.LongName)
                     : "-".JoinTo(optionSpec.ShortName))
-                        .AppendIf(longName && settings.UseEqualToken && optionSpec.ConversionType != typeof(bool), "=", " ")
+                        .AppendWhen(optionSpec.TargetType != TargetType.Switch, longName && settings.UseEqualToken ? "=" : " ")
                     .ToString();
         }
 
         private static object NormalizeValue(this object value)
         {
+#if !SKIP_FSHARP
             if (value != null
                 && ReflectionHelper.IsFSharpOptionType(value.GetType())
                 && FSharpOptionHelper.IsSome(value))
             {
                 return FSharpOptionHelper.ValueOf(value);
             }
+#endif
             return value;
         }
 
         private static bool IsEmpty(this object value)
         {
             if (value == null) return true;
+#if !SKIP_FSHARP
             if (ReflectionHelper.IsFSharpOptionType(value.GetType()) && !FSharpOptionHelper.IsSome(value)) return true;
+#endif
             if (value is ValueType && value.Equals(value.GetType().GetDefaultValue())) return true;
             if (value is string && ((string)value).Length == 0) return true;
             if (value is IEnumerable && !((IEnumerable)value).GetEnumerator().MoveNext()) return true;

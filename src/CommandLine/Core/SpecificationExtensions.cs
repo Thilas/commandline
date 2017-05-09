@@ -33,7 +33,8 @@ namespace CommandLine.Core
                 specification.MetaValue,
                 specification.EnumValues,
                 specification.ConversionType,
-                specification.TargetType);
+                specification.TargetType,
+                specification.Hidden);
         }
 
         public static string UniqueName(this OptionSpecification specification)
@@ -47,7 +48,7 @@ namespace CommandLine.Core
             {
                 if (specifications.Any(spec => guard.Item1(spec)))
                 {
-                    throw new ApplicationException(guard.Item2);
+                    throw new InvalidOperationException(guard.Item2);
                 }
             }
 

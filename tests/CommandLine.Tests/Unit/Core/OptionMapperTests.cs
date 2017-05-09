@@ -4,6 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+#if PLATFORM_DOTNET
+using System.Reflection;
+#endif
 using CommandLine.Core;
 using CommandLine.Tests.Fakes;
 using Xunit;
@@ -34,11 +37,12 @@ namespace CommandLine.Tests.Unit.Core
             var result = OptionMapper.MapValues(
                 specProps.Where(pt => pt.Specification.IsOption()),
                 tokenPartitions,
-                (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, CultureInfo.InvariantCulture),
-                StringComparer.InvariantCulture);
+                (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, CultureInfo.InvariantCulture, false),
+                StringComparer.Ordinal
+                );
 
             // Verify outcome
-            Assert.NotNull(((Ok<IEnumerable<SpecificationProperty>, Error>)result).Value.Success.Single(
+            Assert.NotNull(((Ok<IEnumerable<SpecificationProperty>, Error>)result).Success.Single(
                 a => a.Specification.IsOption()
                 && ((OptionSpecification)a.Specification).ShortName.Equals("x")
                 && (bool)((Just<object>)a.Value).Value));

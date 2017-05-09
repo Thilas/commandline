@@ -6,6 +6,7 @@ using System.Linq;
 using CommandLine.Infrastructure;
 using CSharpx;
 using RailwaySharp.ErrorHandling;
+using System.Text.RegularExpressions;
 
 namespace CommandLine.Core
 {
@@ -98,7 +99,7 @@ namespace CommandLine.Core
                         .Where(t => t.IsJust())
                 select t.FromJustOrFail();
 
-            var normalized = tokens.Except(toExclude);
+            var normalized = tokens.Where(t => toExclude.Contains(t) == false);
 
             return normalized;
         }
@@ -134,7 +135,7 @@ namespace CommandLine.Core
             string value,
             Func<string, NameLookupResult> nameLookup)
         {
-            if (value.Length > 1 || value[0] == '-' || value[1] != '-')
+            if (value.Length > 1 && value[0] == '-' && value[1] != '-')
             {
                 var text = value.Substring(1);
 
@@ -188,9 +189,19 @@ namespace CommandLine.Core
                     onError(new BadFormatTokenError(value));
                     yield break;
                 }
-                var parts = text.Split('=');
-                yield return Token.Name(parts[0]);
-                yield return Token.Value(parts[1], true);
+
+                var tokenMatch = Regex.Match(text, "^([^=]+)=([^ ].*)$");
+
+                if (tokenMatch.Success)
+                {
+                    yield return Token.Name(tokenMatch.Groups[1].Value);
+                    yield return Token.Value(tokenMatch.Groups[2].Value, true);
+                }
+                else
+                {
+                    onError(new BadFormatTokenError(value));
+                    yield break;
+                }
             }
         }
     }

@@ -81,11 +81,6 @@ namespace CommandLine
             get { return @default; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-
                 @default = value;
             }
         }
@@ -122,6 +117,15 @@ namespace CommandLine
 
                 metaValue = value;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether a command line option is visible in the help text.
+        /// </summary>
+        public bool Hidden
+        {
+            get;
+            set;
         }
     }
 }

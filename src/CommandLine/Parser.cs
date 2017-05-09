@@ -97,6 +97,7 @@ namespace CommandLine
                     (arguments, optionSpecs) => Tokenize(arguments, optionSpecs, settings),
                     args,
                     settings.NameComparer,
+                    settings.CaseInsensitiveEnumValues,
                     settings.ParsingCulture,
                     HandleUnknownArguments(settings.IgnoreUnknownArguments)),
                 settings);
@@ -125,6 +126,7 @@ namespace CommandLine
                     (arguments, optionSpecs) => Tokenize(arguments, optionSpecs, settings),
                     args,
                     settings.NameComparer,
+                    settings.CaseInsensitiveEnumValues,
                     settings.ParsingCulture,
                     HandleUnknownArguments(settings.IgnoreUnknownArguments)),
                 settings);
@@ -185,15 +187,16 @@ namespace CommandLine
         {
             return DisplayHelp(
                 parserResult,
-                settings.HelpWriter);
+                settings.HelpWriter,
+                settings.MaximumDisplayWidth);
         }
 
-        private static ParserResult<T> DisplayHelp<T>(ParserResult<T> parserResult, TextWriter helpWriter)
+        private static ParserResult<T> DisplayHelp<T>(ParserResult<T> parserResult, TextWriter helpWriter, int maxDisplayWidth)
         {
             parserResult.WithNotParsed(
                 errors =>
                     Maybe.Merge(errors.ToMaybe(), helpWriter.ToMaybe())
-                        .Do((_, writer) => writer.Write(HelpText.AutoBuild(parserResult)))
+                        .Do((_, writer) => writer.Write(HelpText.AutoBuild(parserResult, maxDisplayWidth)))
                 );
 
             return parserResult;

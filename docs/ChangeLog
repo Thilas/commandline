@@ -1,11 +1,48 @@
+2015-10-16    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * PR #255 fixes Issue #254 by @scadorel Merged.
+
+2015-09-22    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Issue #241 (reported by @pvmraghunandan) Fixed.
+
+2015-09-13    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Added properties test project using FsCheck.
+  
+2015-09-07    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Internal refactoring on OptionMapper.
+
+2015-09-03    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Updated RailwaySharp source reference.
+
+2015-09-02    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * PR #231 (by @kshanafelt) Merged.
+
+2015-08-29    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * Internal refactoring.
+
+2015-08-27    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * PR #227 (by @cfeilen) Merged.
+
+2015-08-24    Giacomo Stelluti Scala  <gsscoder@gmail.com>
+
+  * PR #227 (by @Thilas) Merged.
+  * Reverted back to Tuple<...> instead of TokePartitions type.
+
 2015-08-20    Giacomo Stelluti Scala  <gsscoder@gmail.com>
 
-* All ParserResult<T>.Return renamed to MapResult.
+  * All ParserResult<T>.Return renamed to MapResult.
 
 2015-08-19    Giacomo Stelluti Scala  <gsscoder@gmail.com>
 
-* Issue #225 (reported by @rmunn) Fixed.
-* Issue #225/b (reported by @rmunn) Fixed.
+  * Issue #225 (reported by @rmunn) Fixed.
+  * Issue #225/b (reported by @rmunn) Fixed.
 
 2015-08-15    Giacomo Stelluti Scala  <gsscoder@gmail.com>
 

@@ -4,46 +4,52 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+#if PLATFORM_DOTNET
+using System.Reflection;
+#endif
 using CommandLine.Infrastructure;
 using CSharpx;
 using RailwaySharp.ErrorHandling;
+using System.Reflection;
 
 namespace CommandLine.Core
 {
     static class TypeConverter
     {
-        public static Maybe<object> ChangeType(IEnumerable<string> values, Type conversionType, bool scalar, CultureInfo conversionCulture)
+        public static Maybe<object> ChangeType(IEnumerable<string> values, Type conversionType, bool scalar, CultureInfo conversionCulture, bool ignoreValueCase)
         {
             return scalar
-                ? ChangeTypeScalar(values.Single(), conversionType, conversionCulture)
-                : ChangeTypeSequence(values, conversionType, conversionCulture);
+                ? ChangeTypeScalar(values.Single(), conversionType, conversionCulture, ignoreValueCase)
+                : ChangeTypeSequence(values, conversionType, conversionCulture, ignoreValueCase);
         }
 
-        private static Maybe<object> ChangeTypeSequence(IEnumerable<string> values, Type conversionType, CultureInfo conversionCulture)
+        private static Maybe<object> ChangeTypeSequence(IEnumerable<string> values, Type conversionType, CultureInfo conversionCulture, bool ignoreValueCase)
         {
             var type =
-                conversionType.GetGenericArguments()
+                conversionType.GetTypeInfo()
+                              .GetGenericArguments()
                               .SingleOrDefault()
                               .ToMaybe()
                               .FromJustOrFail(
-                                  new ApplicationException("Non scalar properties should be sequence of type IEnumerable<T>."));
+                                  new InvalidOperationException("Non scalar properties should be sequence of type IEnumerable<T>.")
+                    );
 
-            var converted = values.Select(value => ChangeTypeScalar(value, type, conversionCulture));
+            var converted = values.Select(value => ChangeTypeScalar(value, type, conversionCulture, ignoreValueCase));
 
             return converted.Any(a => a.MatchNothing())
                 ? Maybe.Nothing<object>()
                 : Maybe.Just(converted.Select(c => ((Just<object>)c).Value).ToUntypedArray(type));
         }
 
-        private static Maybe<object> ChangeTypeScalar(string value, Type conversionType, CultureInfo conversionCulture)
+        private static Maybe<object> ChangeTypeScalar(string value, Type conversionType, CultureInfo conversionCulture, bool ignoreValueCase)
         {
-            var result = ChangeTypeScalarImpl(value, conversionType, conversionCulture);
+            var result = ChangeTypeScalarImpl(value, conversionType, conversionCulture, ignoreValueCase);
             result.Match((_,__) => { }, e => e.First().RethrowWhenAbsentIn(
                 new[] { typeof(InvalidCastException), typeof(FormatException), typeof(OverflowException) }));
             return result.ToMaybe();
         }
 
-        private static Result<object, Exception> ChangeTypeScalarImpl(string value, Type conversionType, CultureInfo conversionCulture)
+        private static Result<object, Exception> ChangeTypeScalarImpl(string value, Type conversionType, CultureInfo conversionCulture, bool ignoreValueCase)
         {
             Func<object> changeType = () =>
             {
@@ -53,33 +59,41 @@ namespace CommandLine.Core
 
                     Func<Type> getUnderlyingType =
                         () =>
+#if !SKIP_FSHARP
                             isFsOption
-                                ? FSharpOptionHelper.GetUnderlyingType(conversionType)
-                                : Nullable.GetUnderlyingType(conversionType);
+                                ? FSharpOptionHelper.GetUnderlyingType(conversionType) :
+#endif
+                                Nullable.GetUnderlyingType(conversionType);
 
                     var type = getUnderlyingType() ?? conversionType;
 
                     Func<object> withValue =
                         () =>
+#if !SKIP_FSHARP
                             isFsOption
-                                ? FSharpOptionHelper.Some(type, Convert.ChangeType(value, type, conversionCulture))
-                                : Convert.ChangeType(value, type, conversionCulture);
+                                ? FSharpOptionHelper.Some(type, Convert.ChangeType(value, type, conversionCulture)) :
+#endif
+                                Convert.ChangeType(value, type, conversionCulture);
 
+#if !SKIP_FSHARP
                     Func<object> empty = () => isFsOption ? FSharpOptionHelper.None(type) : null;
+#else
+                    Func<object> empty = () => null;
+#endif
 
                     return (value == null) ? empty() : withValue();
                 };
 
-                return value.IsBooleanString()
-                    ? value.ToBoolean() : conversionType.IsEnum
-                        ? value.ToEnum(conversionType) : safeChangeType();
+                return value.IsBooleanString() && conversionType == typeof(bool)
+                    ? value.ToBoolean() : conversionType.GetTypeInfo().IsEnum
+                        ? value.ToEnum(conversionType, ignoreValueCase) : safeChangeType();
             };
 
             Func<object> makeType = () =>
             {
                 try
                 {
-                    var ctor = conversionType.GetConstructor(new[] { typeof(string) });
+                    var ctor = conversionType.GetTypeInfo().GetConstructor(new[] { typeof(string) });
                     return ctor.Invoke(new object[] { value });
                 }
                 catch (Exception)
@@ -94,12 +108,12 @@ namespace CommandLine.Core
                     : makeType);
         }
 
-        private static object ToEnum(this string value, Type conversionType)
+        private static object ToEnum(this string value, Type conversionType, bool ignoreValueCase)
         {
             object parsedValue;
             try
             {
-                parsedValue = Enum.Parse(conversionType, value);
+                parsedValue = Enum.Parse(conversionType, value, ignoreValueCase);
             }
             catch (ArgumentException)
             {

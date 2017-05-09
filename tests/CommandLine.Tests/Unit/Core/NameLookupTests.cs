@@ -20,12 +20,31 @@ namespace CommandLine.Tests.Unit.Core
                 false, string.Empty, Maybe.Nothing<int>(), Maybe.Nothing<int>(), '.', null, string.Empty, string.Empty, new List<string>(), typeof(IEnumerable<string>), TargetType.Sequence)};
 
             // Exercize system
-            var result = NameLookup.HavingSeparator("string-seq", specs, StringComparer.InvariantCulture);
+            var result = NameLookup.HavingSeparator("string-seq", specs, StringComparer.Ordinal);
+            // Verify outcome
+            expected.ShouldBeEquivalentTo(result);
+
+            // Teardown
+        }
+
+        [Fact]
+        public void Get_name_from_option_specification()
+        {
+            const string ShortName = "s";
+            const string LongName = "long";
+
+            // Fixture setup
+            var expected = new NameInfo(ShortName, LongName);
+            var spec = new OptionSpecification(ShortName, LongName, false, string.Empty, Maybe.Nothing<int>(), Maybe.Nothing<int>(), '.', null, string.Empty, string.Empty, new List<string>(), typeof(IEnumerable<string>), TargetType.Sequence);
+
+            // Exercize system
+            var result = spec.FromOptionSpecification();
 
             // Verify outcome
             expected.ShouldBeEquivalentTo(result);
 
             // Teardown
         }
+
     }
 }
